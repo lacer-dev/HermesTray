@@ -4,6 +4,14 @@
 #include <cassert>
 #include <stdexcept>
 
+namespace { 
+    
+constexpr int TRAY_POS_APPEND = -1; 
+
+};
+
+namespace afk {
+
 ////////// TrayEntry //////////
 
 TrayEntry::TrayEntry(SDL_TrayEntry* entry)
@@ -11,10 +19,6 @@ TrayEntry::TrayEntry(SDL_TrayEntry* entry)
     if (!_entry) {
         throw std::invalid_argument(MakeErr("tray entry can't be constructed from null\n"));
     }
-}
-
-TrayEntry TrayEntry::FromHandle(SDL_TrayEntry* entry) {
-    return TrayEntry(entry);
 }
 
 TrayEntry::TrayEntry(TrayMenu* menu, int pos, const char* label, SDL_TrayEntryFlags flags) {
@@ -28,7 +32,6 @@ SDL_TrayEntry* TrayEntry::Handle() {
     return _entry;
 }
 
-
 void TrayEntry::SetCallback(SDL_TrayCallback callback) {
     SDL_SetTrayEntryCallback(Handle(), callback, nullptr);
 }
@@ -41,7 +44,9 @@ void TrayEntry::SetLabel(const std::string& label) {
     SDL_SetTrayEntryLabel(Handle(), label.c_str());
 }
 
+
 ////////// TrayMenu //////////
+
 TrayMenu::TrayMenu(TrayIcon& icon) {
     _menu = SDL_CreateTrayMenu(icon.Handle());
     if (!_menu) {
@@ -52,10 +57,6 @@ TrayMenu::TrayMenu(TrayIcon& icon) {
 SDL_TrayMenu* TrayMenu::Handle() { 
     return _menu; 
 }
-
-namespace { 
-constexpr int TRAY_POS_APPEND = -1; 
-};
 
 TrayEntry& TrayMenu::AddEntryToVector(int pos, TrayEntry& entry) {
     if (pos == TRAY_POS_APPEND) {
@@ -123,3 +124,5 @@ TrayMenu& TrayIcon::CreateMenu() {
 TrayMenu& TrayIcon::Menu() { 
     return *_menu; 
 }
+
+};

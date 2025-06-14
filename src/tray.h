@@ -5,15 +5,15 @@
 #include <vector>
 #include "surface.h"
 
+namespace afk {
+
 class TrayIcon;
 class TrayMenu;
 class TrayEntry;
 
 class TrayEntry {
 public:
-    // using Callback = void(* const)(TrayEntry&);
-
-    static TrayEntry FromHandle(SDL_TrayEntry*);
+    TrayEntry(SDL_TrayEntry* handle);
 
     SDL_TrayEntry* Handle();
 
@@ -26,7 +26,6 @@ private:
     SDL_TrayEntry* _entry;
     
     TrayEntry(TrayMenu* menu, int pos, const char* label, SDL_TrayEntryFlags flags);
-    TrayEntry(SDL_TrayEntry*);
 };
 
 class TrayMenu {
@@ -62,4 +61,6 @@ public:
 private:
     SDL_Tray* _icon;
     TrayMenu* _menu = nullptr;
+};
+
 };

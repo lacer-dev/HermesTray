@@ -28,11 +28,25 @@ inline void PrintErr(const std::string& message) {
 
 #ifndef NDEBUG
 #include <format>
-#define debug(format_s, ...) do { std::cerr << std::format(format_s __VA_OPT__(,) __VA_ARGS__) } while (0)
+#include <cstdlib>
 #define DebugPrintErr(format_s, ...) do { std::cerr << std::format(format_s __VA_OPT__(,) __VA_ARGS__); } while (0)
 #define DebugPrint(format_s, ...) do { std::cout << std::format(format_s __VA_OPT__(,) __VA_ARGS__); } while (0)
+#define Assert(condition) do { \
+    if (!condition) { \
+        std::cerr << std::format("Assert Failed: Assert({})\n", #condition); \
+        std::abort(); \
+    } \
+} while (0)
+#define AssertErr(condition, message) do { \
+    if (!condition) { \
+        std::cerr << std::format("Assert Failed: Assert({})\n", #condition); \
+        std::cerr << std::format("note: message: \"{}\"", message) << '\n'; \
+        std::abort(); \
+    } \
+} while (0)
 #else
-#define debug(format_s, ...)
-#define DebugPrintErr(format_s, ...)
-#define DebugPrint(format_s, ...)
+#define DebugPrintErr(format_s, ...) ((void)0)
+#define DebugPrint(format_s, ...) ((void)0)
+#define Assert(condition) ((void)0)
+#define AssertErr(condition, message) ((void)0)
 #endif

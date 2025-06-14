@@ -16,17 +16,29 @@ set(CMAKE_CXX_STANDARD_REQUIRED 23)
 
 add_subdirectory(vendor/SDL EXCLUDE_FROM_ALL) # add SDL source
 add_subdirectory(vendor/SDL_image EXCLUDE_FROM_ALL) # add SDL_Image source
+
 # source files
 set(SRC_FILES 
+    "src/afk.cpp"
+    "src/app.cpp"
     "src/app.h"
     "src/error.h"
     "src/main.cpp"
     "src/surface.h"
+    "src/system.cpp"
+    "src/system.h"
     "src/timing.h"
     "src/tray.cpp"
     "src/tray.h"
 )
 
+# resources
+set(RUNTIME_RESOURCES_DIR "${CMAKE_SOURCE_DIR}/bin/Resources")
+set(SOURCE_RESOURCES_DIR "${CMAKE_SOURCE_DIR}/resources")
+
+file(COPY "${SOURCE_RESOURCES_DIR}/icon128.png" DESTINATION "${RUNTIME_RESOURCES_DIR}")
+
+# compile options
 set(COMPILE_OPTS
     "-Wall"
     "-Wextra"
