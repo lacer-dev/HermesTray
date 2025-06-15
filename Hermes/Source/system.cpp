@@ -83,7 +83,7 @@ void SDLManager::Init(int systems) {
     SetAppMetadataProperty(SDL_PROP_APP_METADATA_VERSION_STRING,    "0.0.1");
     SetAppMetadataProperty(SDL_PROP_APP_METADATA_CREATOR_STRING,    "Leon Allotey");
     SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING,  "Copyright (c) 2025 Leon Allotey");
-    // SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING,        "");
+    SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING,        "https://github.com/lacer-dev/HermesTray");
     SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING,       "application");
     
     if (!SDL_Init(systems)) {

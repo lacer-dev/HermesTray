@@ -13,18 +13,7 @@ const std::string& GetSleepStatusLabel() {
         ? SLEEP_ENABLED_STRING : SLEEP_DISABLED_STRING;
 }
 
-
-void OnQuit(void*, SDL_TrayEntry* p_entry) {
-    using namespace std::literals;
-
-    SDL_Event event = {.type = SDL_EVENT_QUIT};
-    if (!SDL_PushEvent(&event)) {
-        err::note(err::get_sdl_error());
-    }
-}
-
-
-void OnToggle(void*, SDL_TrayEntry* p_entry) {
+void OnClickToggleSleep(void*, SDL_TrayEntry* p_entry) {
     sdl::TrayEntry entry{p_entry};
     afk::sys::Display::ToggleSleep();
     entry.SetLabel(GetSleepStatusLabel());
@@ -38,6 +27,22 @@ void OnToggle(void*, SDL_TrayEntry* p_entry) {
         DebugPrintLn("afk: Sleep Disabled");  
     }
     #endif
+}
+
+void OnClickQuit(void*, SDL_TrayEntry* p_entry) {
+    using namespace std::literals;
+
+    SDL_Event event = {.type = SDL_EVENT_QUIT};
+    if (!SDL_PushEvent(&event)) {
+        err::note(err::get_sdl_error());
+    }
+}
+
+void OnClickAbout(void*, SDL_TrayEntry* p_entry) {
+    const char* url = SDL_GetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING);    
+    if (!SDL_OpenURL(url)) {
+        afk::sys::MessageBoxes::ShowError(SDL_GetError());
+    }
 }
 
 };
@@ -83,16 +88,19 @@ void App::Init() {
     DebugPrintLn("afk: Creating Tray Icon...");
     
     icon = std::make_unique<sdl::TrayIcon>(icon_image, "Hermes");
-    sdl::TrayMenu& menu = icon->CreateMenu();
+    auto& menu = icon->CreateMenu();
 
     sys::Display::DisableSleeping();
-    sdl::TrayEntry toggleButton = menu.InsertCheckbox(0, GetSleepStatusLabel(), false);
-    toggleButton.SetCallback(OnToggle);
+    auto toggle = menu.InsertCheckbox(0, GetSleepStatusLabel(), false);
+    toggle.SetCallback(OnClickToggleSleep);
     
     menu.InsertSeparator(1);
 
-    sdl::TrayEntry quitButton = menu.InsertEntry(2, "Quit");
-    quitButton.SetCallback(OnQuit);
+    auto quit = menu.InsertEntry(2, "Quit");
+    quit.SetCallback(OnClickQuit);
+
+    auto about_button = menu.InsertEntry(3, "About Hermes");
+    about_button.SetCallback(OnClickAbout);
     
     DebugPrintLn("afk: Creating Tray Icon (done)");
 }
