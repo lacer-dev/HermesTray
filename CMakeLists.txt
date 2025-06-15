@@ -2,26 +2,29 @@
 cmake_minimum_required(VERSION 3.15) 
 # details about the project
 project(Hermes
-    VERSION 0.0.1
+    VERSION 0.1.0
     LANGUAGES CXX
 )
 
 set(PROJECT_DIR "${CMAKE_SOURCE_DIR}/${PROJECT_NAME}")
+set(BIN_DIR "${CMAKE_SOURCE_DIR}/bin/${PROJECT_NAME}")
+set(VENDOR_DIR ${PROJECT_DIR}/Vendor)
+set(SRC_DIR ${PROJECT_DIR}/Source)
+# resources
+set(RUNTIME_RESOURCES_DIR "${BIN_DIR}/Resources")
+set(SOURCE_RESOURCES_DIR "${PROJECT_DIR}/Resources")
 
 # where executables should go
 # note: Allows SDL DLLS to be automatically placed in bin directory  
-set(BIN_DIR "${CMAKE_SOURCE_DIR}/bin/${PROJECT_NAME}")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${BIN_DIR}/$<CONFIGURATION>")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${BIN_DIR}/$<CONFIGURATION>")
 # cpp version = c++23
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED 23)
 # sdl
-set(VENDOR_DIR ${PROJECT_DIR}/Vendor)
 add_subdirectory(${VENDOR_DIR}/SDL EXCLUDE_FROM_ALL) # add SDL source
 add_subdirectory(${VENDOR_DIR}/SDL_image EXCLUDE_FROM_ALL) # add SDL_Image source
 
-set(SRC_DIR ${PROJECT_DIR}/Source)
 
 # set(HEADER_FILES
 #     "${SRC_DIR}/app.h"
@@ -57,9 +60,6 @@ target_compile_options(${TARGET_NAME} PRIVATE ${COMPILE_OPTS})
 target_precompile_headers(${TARGET_NAME} PRIVATE ${PCH})
 target_link_libraries(${TARGET_NAME} PRIVATE SDL3_image::SDL3_image SDL3::SDL3)
 
-# resources
-set(RUNTIME_RESOURCES_DIR "${BIN_DIR}/Resources")
-set(SOURCE_RESOURCES_DIR "${PROJECT_DIR}/Resources")
 
 # add_custom_command(
 #     TARGET ${TARGET_NAME} POST_BUILD
