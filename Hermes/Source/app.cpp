@@ -34,12 +34,12 @@ void OnClickQuit(void*, SDL_TrayEntry* p_entry) {
 
     SDL_Event event = {.type = SDL_EVENT_QUIT};
     if (!SDL_PushEvent(&event)) {
-        err::note(err::get_sdl_error());
+        afk::sys::MessageBoxes::ShowError(SDL_GetError());
     }
 }
 
 void OnClickAbout(void*, SDL_TrayEntry* p_entry) {
-    const char* url = SDL_GetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING);    
+    const char* url = "https://github.com/lacer-dev/HermesTray";    
     if (!SDL_OpenURL(url)) {
         afk::sys::MessageBoxes::ShowError(SDL_GetError());
     }
@@ -91,16 +91,15 @@ void App::Init() {
     auto& menu = icon->CreateMenu();
 
     sys::Display::DisableSleeping();
-    auto toggle = menu.InsertCheckbox(0, GetSleepStatusLabel(), false);
-    toggle.SetCallback(OnClickToggleSleep);
-    
+    auto about = menu.InsertEntry(0, "About Hermes");
     menu.InsertSeparator(1);
-
-    auto quit = menu.InsertEntry(2, "Quit");
+    auto toggle = menu.InsertCheckbox(2, GetSleepStatusLabel(), false);
+    menu.InsertSeparator(3);
+    auto quit = menu.InsertEntry(4, "Quit");
+    
+    about.SetCallback(OnClickAbout);
+    toggle.SetCallback(OnClickToggleSleep);
     quit.SetCallback(OnClickQuit);
-
-    auto about_button = menu.InsertEntry(3, "About Hermes");
-    about_button.SetCallback(OnClickAbout);
     
     DebugPrintLn("afk: Creating Tray Icon (done)");
 }
