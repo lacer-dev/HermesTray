@@ -1,5 +1,0 @@
-Setup:
-pushd ./scripts && ./cmake-msys.sh && popd
-
-Building:
-cmake --build build

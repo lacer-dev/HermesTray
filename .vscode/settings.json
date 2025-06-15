@@ -74,6 +74,10 @@
         "sdl_tray_utils.h": "c",
         "sdl_internal.h": "c",
         "codecvt": "cpp",
-        "*.inc": "cpp"
+        "*.inc": "cpp",
+        "filesystem": "cpp",
+        "cassert": "cpp",
+        "error.h": "c",
+        "*.def": "cpp"
     }
 }

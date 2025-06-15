@@ -1,42 +1,47 @@
 # CMake version
 cmake_minimum_required(VERSION 3.15) 
 # details about the project
-project(afk_window
+project(Hermes
     VERSION 0.0.1
     LANGUAGES CXX
 )
 
+set(PROJECT_DIR "${CMAKE_SOURCE_DIR}/${PROJECT_NAME}")
+
 # where executables should go
 # note: Allows SDL DLLS to be automatically placed in bin directory  
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/$<CONFIGURATION>")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/$<CONFIGURATION>")
+set(BIN_DIR "${CMAKE_SOURCE_DIR}/bin/${PROJECT_NAME}")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${BIN_DIR}/$<CONFIGURATION>")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${BIN_DIR}/$<CONFIGURATION>")
 # cpp version = c++23
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED 23)
+# sdl
+set(VENDOR_DIR ${PROJECT_DIR}/Vendor)
+add_subdirectory(${VENDOR_DIR}/SDL EXCLUDE_FROM_ALL) # add SDL source
+add_subdirectory(${VENDOR_DIR}/SDL_image EXCLUDE_FROM_ALL) # add SDL_Image source
 
-add_subdirectory(vendor/SDL EXCLUDE_FROM_ALL) # add SDL source
-add_subdirectory(vendor/SDL_image EXCLUDE_FROM_ALL) # add SDL_Image source
+set(SRC_DIR ${PROJECT_DIR}/Source)
+
+# set(HEADER_FILES
+#     "${SRC_DIR}/app.h"
+#     "${SRC_DIR}/error.h"
+#     "${SRC_DIR}/pch.h"
+#     "${SRC_DIR}/surface.h"
+#     "${SRC_DIR}/system.h"
+#     "${SRC_DIR}/tray.h"
+# )
 
 # source files
 set(SRC_FILES 
-    "src/afk.cpp"
-    "src/app.cpp"
-    "src/app.h"
-    "src/error.h"
-    "src/main.cpp"
-    "src/surface.h"
-    "src/system.cpp"
-    "src/system.h"
-    "src/timing.h"
-    "src/tray.cpp"
-    "src/tray.h"
+    "${SRC_DIR}/app.cpp"
+    "${SRC_DIR}/error.cpp"
+    "${SRC_DIR}/main.cpp"
+    "${SRC_DIR}/system.cpp"
+    "${SRC_DIR}/tray.cpp"
 )
 
-# resources
-set(RUNTIME_RESOURCES_DIR "${CMAKE_SOURCE_DIR}/bin/Resources")
-set(SOURCE_RESOURCES_DIR "${CMAKE_SOURCE_DIR}/resources")
-
-file(COPY "${SOURCE_RESOURCES_DIR}/icon128.png" DESTINATION "${RUNTIME_RESOURCES_DIR}")
+set(PCH "${SRC_DIR}/pch.h")
 
 # compile options
 set(COMPILE_OPTS
@@ -46,6 +51,21 @@ set(COMPILE_OPTS
 )
 
 # executable
-add_executable(afkwindow ${SRC_FILES})
-target_compile_options(afkwindow PUBLIC ${COMPILE_OPTS})
-target_link_libraries(afkwindow PRIVATE SDL3_image::SDL3_image SDL3::SDL3)
+set(TARGET_NAME hermes)
+add_executable(${TARGET_NAME} ${SRC_FILES})
+target_compile_options(${TARGET_NAME} PRIVATE ${COMPILE_OPTS})
+target_precompile_headers(${TARGET_NAME} PRIVATE ${PCH})
+target_link_libraries(${TARGET_NAME} PRIVATE SDL3_image::SDL3_image SDL3::SDL3)
+
+# resources
+set(RUNTIME_RESOURCES_DIR "${BIN_DIR}/Resources")
+set(SOURCE_RESOURCES_DIR "${PROJECT_DIR}/Resources")
+
+# add_custom_command(
+#     TARGET ${TARGET_NAME} POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E copy
+#         "${SOURCE_RESOURCES_DIR}/icon128.png"
+#         "${RUNTIME_RESOURCES_DIR}/icon128.png"
+# )
+                
+file(COPY "${SOURCE_RESOURCES_DIR}/icon128.png" DESTINATION "${RUNTIME_RESOURCES_DIR}")
