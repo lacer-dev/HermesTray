@@ -1,12 +1,9 @@
-# HermesTray
-A systray utility for hermes grinding.
-
-## Version
-The current version is <i>0.1.0</i>
-
+# HermesTray 0.1.1
+A systray utility for AFK grinding.
+## Features
+* Disable screensaver from system tray (automatically reenabled upon exit)
 ## Supported Platforms
 * Windows
-
 ## Setup
-### Prerequisites
+### Prerequisites:
 * CMake
