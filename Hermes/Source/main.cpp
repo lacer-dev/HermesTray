@@ -2,7 +2,7 @@
 #include "app.h"
 
 int main(int argc, char** argv) {
-    afk::App app;
+    hermes::App app;
     app.Run();
     return 0;
 }

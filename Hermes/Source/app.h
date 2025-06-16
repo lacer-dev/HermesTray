@@ -1,10 +1,8 @@
 #pragma once
 #include <memory>
-#include "surface.h"
-#include "system.h"
-#include "tray.h"
+#include "SDL/tray.h"
 
-namespace afk {
+namespace hermes {
 
 class App {
 public:
@@ -25,10 +23,8 @@ private:
     void Init();
     void Events(SDL_Event* event);
 
-    sys::SDLManager sdl_manager;
-    sys::ResourceManager resource_manager{"Resources"};
 private:
-    std::unique_ptr<sdl::TrayIcon> icon;
+    std::unique_ptr<SDL::Tray> icon;
 };
 
 };

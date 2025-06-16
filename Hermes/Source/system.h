@@ -1,74 +1,38 @@
 #pragma once
 #include <string>
 #include <filesystem>
-#include <system_error>
 
-namespace afk::sys {
+namespace hermes {
     
-struct MessageBoxes {
-public:
-    MessageBoxes() = delete;
-    
-    /**
-     * @brief Displays an error message box to the screen with the given message.
-     */
-    static void ShowError(const std::string& message = "", const std::string& title = "hermes - error");
-};
+/**
+    * @brief Pauses the program for the specified duration in miliseconds.
+    * 
+    * Uses a while loop, rather than sleeping the current thread,
+    */
+void WaitMiliseconds(int duration);
 
-struct Timing {
-public:
-    Timing() = delete;
-    
-    /**
-     * @brief Pauses the program for the specified duration in miliseconds.
-     * 
-     * Uses a while loop, rather than sleeping the current thread,
-     */
-    static void WaitMiliseconds(int duration);
-};
+bool IsDisplaySleepEnabled();
+bool IsDisplaySleepDisabled();
+void EnableDisplaySleep();
+void DisableDisplaySleep();
 
-
-struct Display {
-public:
-    Display() = delete;
-
-    static bool IsSleepEnabled() { return _allow_sleep; }
-    static void EnableSleeping();
-    static void DisableSleeping();
-    
-    /**
-     * @brief Toggles the display's ability to sleep.
-     * 
-     * Upon error, displays a messagebox and exits the program with a negative error code.
-     */
-    static void ToggleSleep();
-private:
-    static bool _allow_sleep;
-};
-
-
-class SDLManager {
-public:
-    SDLManager() = default;
-    ~SDLManager();
-    void Init(int systems);
-    void Quit();
-private:
-    std::string GetError();
-    void SetAppMetadataProperty(const char*, const char*);
-};
+// Toggles the display's ability to sleep.
+// Upon error, displays a messagebox and exits the program with a negative error code.
+void ToggleDisplaySleep();
 
 
 class ResourceManager {
 public:
-    ResourceManager(const std::string& path_to_res);
+    // Creates a new ResourceManager
+    ResourceManager(const std::filesystem::path& relative_path);
 
-    /**
-     * @brief Retrieves the path to a given resource in the Resources directory.
-     */
-    std::filesystem::path GetPathToResource(const std::string& filename);
+    // Returns the path to the manager's resources directory
+    std::filesystem::path Dir() { return _directory; }
+
+    // Retrieves the path to a given resource in the Resources directory.
+    std::filesystem::path GetPath(const std::string& filename);
 private:
-    std::filesystem::path _res_dir;
+    std::filesystem::path _directory;
 };
 
 };

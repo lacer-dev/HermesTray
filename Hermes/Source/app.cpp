@@ -1,30 +1,24 @@
+#include "SDL/init.h"
+#include "SDL/misc.h"
 #include "pch.h"
 #include "app.h"
 #include "error.h"
 #include "system.h"
+#include "globals.h"
+#include "SDL/SDLcpp.h"
 
 namespace {
-    
-const std::string& GetSleepStatusLabel() {
-    static const std::string SLEEP_ENABLED_STRING = "Sleep Enabled";
-    static const std::string SLEEP_DISABLED_STRING = "Sleep Disabled";
-
-    return afk::sys::Display::IsSleepEnabled()
-        ? SLEEP_ENABLED_STRING : SLEEP_DISABLED_STRING;
-}
 
 void OnClickToggleSleep(void*, SDL_TrayEntry* p_entry) {
-    sdl::TrayEntry entry{p_entry};
-    afk::sys::Display::ToggleSleep();
-    entry.SetLabel(GetSleepStatusLabel());
-    
-    Assert(entry.IsChecked() == afk::sys::Display::IsSleepEnabled());
+    SDL::TrayEntry entry{p_entry};
+    hermes::ToggleDisplaySleep();
+    Assert(entry.IsChecked() == hermes::IsDisplaySleepDisabled());
 
     #ifndef NDEBUG
-    if (afk::sys::Display::IsSleepEnabled()) {
-        DebugPrintLn("afk: Sleep Enabled");
+    if (hermes::IsDisplaySleepEnabled()) {
+        DebugPrintLn("hermes: Sleep Enabled");
     } else {
-        DebugPrintLn("afk: Sleep Disabled");  
+        DebugPrintLn("hermes: Sleep Disabled");  
     }
     #endif
 }
@@ -34,80 +28,86 @@ void OnClickQuit(void*, SDL_TrayEntry* p_entry) {
 
     SDL_Event event = {.type = SDL_EVENT_QUIT};
     if (!SDL_PushEvent(&event)) {
-        afk::sys::MessageBoxes::ShowError(SDL_GetError());
+        SDL::ShowSimpleMessageBoxError(hermes::APP_NAME, SDL_GetError());
     }
 }
 
 void OnClickAbout(void*, SDL_TrayEntry* p_entry) {
-    const char* url = "https://github.com/lacer-dev/HermesTray";    
-    if (!SDL_OpenURL(url)) {
-        afk::sys::MessageBoxes::ShowError(SDL_GetError());
+    const std::string url = hermes::WEBSITE_URL;    
+    if (!SDL::OpenURL(url)) {
+        SDL::ShowSimpleMessageBoxError(hermes::APP_NAME, SDL_GetError());
     }
 }
 
 };
 
-namespace afk {
+namespace hermes {
 
 App::App() {
-    DebugPrint("afk: Creating App\n");
-    DebugPrintLn("afk: Initializing SDL...");
-    sdl_manager.Init(SDL_INIT_VIDEO);
-    DebugPrintLn("afk: Initializing SDL (done)");
+    DebugPrint("hermes: Creating App\n");
+    DebugPrintLn("hermes: Initializing SDL...");        
+    SDL::Init(SDL::INIT_VIDEO);
+    DebugPrintLn("hermes: Initializing SDL... (done)");
+    std::atexit(SDL::Quit);
 }
 
 App::~App() {
-    // Uninitialize
-    DebugPrintLn("afk: Uninitializing SDL...");
-    sdl_manager.Quit();
-    DebugPrintLn("afk: Uninitializing SDL (done)");
-    DebugPrint("afk: Destroying App\n");
+    DebugPrint("hermes: Destroying App\n");
+    DebugPrintLn("hermes: Uninitializing SDL...");
+    SDL::Quit();
+    DebugPrintLn("hermes: Uninitializing SDL (done)");
 }
 
 void App::Run() {
-    // Initialize
     Init();
-
-    // Run
-    DebugPrintLn("afk: App Running");
+    
+    DebugPrintLn("hermes: App Running");
     SDL_Event* event = nullptr;
     running = true;
     while (running) {
         while (SDL_PollEvent(event))
             Events(event);
-        sys::Timing::WaitMiliseconds(1000 / 10);
+        WaitMiliseconds(1000 / 10);
     }
-    DebugPrintLn("afk: Quitting (done)");
+    DebugPrintLn("hermes: Quitting (done)");
 }
 
 void App::Init() {
-    DebugPrintLn("afk: Loading Resources...");
-    sdl::Surface icon_image{resource_manager.GetPathToResource("icon128.png")};
-    DebugPrintLn("afk: Loading Resources (done)");
+    SDL::SetMetadataName("hermes Window");
+    SDL::SetMetadataVersion("0.0.1");
+    SDL::SetMetadataCreator("Leon Allotey");
+    SDL::SetMetadataCopyright("Copyright (c) 2025 Leon Allotey");
+    SDL::SetMetadataUrl("https://github.com/lacer-dev/HermesTray");
+    SDL::SetMetadataType("application");
 
-    DebugPrintLn("afk: Creating Tray Icon...");
+    DebugPrintLn("hermes: Loading Resources...");
+    SDL::Surface icon_image = SDL::IMG::Load(gResourceManager.GetPath("icon128.png"));
+    DebugPrintLn("hermes: Loading Resources (done)");
+
+    DebugPrintLn("hermes: Creating Tray Icon...");
     
-    icon = std::make_unique<sdl::TrayIcon>(icon_image, "Hermes");
+    icon = std::make_unique<SDL::Tray>(icon_image, "Hermes");
     auto& menu = icon->CreateMenu();
 
-    sys::Display::DisableSleeping();
+    DisableDisplaySleep();
+    std::atexit(EnableDisplaySleep);
+    auto quit = menu.InsertEntry(0, "Quit");
+    menu.InsertSeparator(0);
+    auto toggle = menu.InsertCheckbox(0, "Disable Sleep", true);
+    menu.InsertSeparator(0);
     auto about = menu.InsertEntry(0, "About Hermes");
-    menu.InsertSeparator(1);
-    auto toggle = menu.InsertCheckbox(2, GetSleepStatusLabel(), false);
-    menu.InsertSeparator(3);
-    auto quit = menu.InsertEntry(4, "Quit");
     
-    about.SetCallback(OnClickAbout);
-    toggle.SetCallback(OnClickToggleSleep);
     quit.SetCallback(OnClickQuit);
+    toggle.SetCallback(OnClickToggleSleep);
+    about.SetCallback(OnClickAbout);
     
-    DebugPrintLn("afk: Creating Tray Icon (done)");
+    DebugPrintLn("hermes: Creating Tray Icon (done)");
 }
 
 void App::Events(SDL_Event* event) {
     switch (event->type) {
     case SDL_EVENT_QUIT:
-        DebugPrintLn("afk: Quitting");
+        DebugPrintLn("hermes: Quitting");
         Stop();
     }
 }
