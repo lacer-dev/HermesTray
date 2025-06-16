@@ -1,3 +1,0 @@
-C:/Users/adote/Projects/CppProjects/cppDump/HermesTray/CMakeFiles/CMakeScratch/TryCompile-fyvz8u/CMakeFiles/cmTC_95cb0.dir
-C:/Users/adote/Projects/CppProjects/cppDump/HermesTray/CMakeFiles/CMakeScratch/TryCompile-fyvz8u/CMakeFiles/edit_cache.dir
-C:/Users/adote/Projects/CppProjects/cppDump/HermesTray/CMakeFiles/CMakeScratch/TryCompile-fyvz8u/CMakeFiles/rebuild_cache.dir
