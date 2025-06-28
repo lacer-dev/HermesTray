@@ -1,21 +1,18 @@
+#pragma once
+
 #include "system.h"
-#include "SDL/SDLcpp.h"
+#include "SDLCPP/SDLCPP.h"
 #include "error.h"
 
-namespace hermes {
+namespace Hermes {
 
-inline std::filesystem::path RESOURCES_DIRECTORY = []{
-    const auto exe_directory = SDL::GetBasePath();
-    if (exe_directory.empty()) {
-        err::fatal(SDL::GetError());
-        std::terminate();
-    }
-    return exe_directory;
-}();
-
-inline ResourceManager gResourceManager{RESOURCES_DIRECTORY};
-inline constexpr std::string APP_NAME = "hermes.exe";
-inline const std::string MESSAGEBOX_TITLE_ERROR = hermes::APP_NAME + " - Error";
-inline const std::string WEBSITE_URL = "https://github.com/lacer-dev/HermesTray";
+    inline const std::string EXECUTABLE_NAME = "Hermes.exe";
+    inline const std::string METADATA_NAME = "HermesTray";
+    inline const std::string METADATA_VERSION = "0.1.1";
+    inline const std::string METADATA_CREATOR = "Leon Allotey";
+    inline const std::string METADATA_COPYRIGHT = "Copyright (c) 2025 Leon Allotey";
+    inline const std::string METADATA_WEBSITE_URL = "https://github.com/lacer-dev/HermesTray";
+    inline const std::filesystem::path RESOURCES_DIRECTORY = SDL::GetBasePath();
+    inline ResourceManager gResourceManager{RESOURCES_DIRECTORY};
 
 };

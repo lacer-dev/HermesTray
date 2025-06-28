@@ -1,30 +1,25 @@
 #pragma once
 #include <memory>
-#include "SDL/tray.h"
 
-namespace hermes {
+#include "systray.h"
+#include "SDLCPP/SDLCPP.h"
 
-class App {
+namespace Hermes {
+
+class Application {
 public:
-    App();
-    ~App();
-
-    /**
-     * Runs the app.
-     */
+    Application();
+    ~Application();
     void Run();
-
-    /**
-     * Stops the main loop.
-     */
     void Stop() { running = false; }
+    bool IsRunning() const { return running; }
+private:
+    void Initialize();
+    void HandleEvents(const SDL::Event& event);
 private:
     bool running = false;
-    void Init();
-    void Events(SDL_Event* event);
-
 private:
-    std::unique_ptr<SDL::Tray> icon;
+    std::unique_ptr<Systray::Icon> icon;
 };
 
 };

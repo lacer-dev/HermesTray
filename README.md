@@ -1,7 +1,7 @@
 # HermesTray 0.1.1
 A systray utility for AFK grinding.
 ## Features
-* Disable screensaver from system tray (automatically reenabled upon exit)
+* Toggle screensaver from system tray (automatically reenabled upon exit)
 ## Supported Platforms
 * Windows
 ## Setup

@@ -21,5 +21,5 @@
 #ifdef _WIN32
 #include <windows.h>
 #else
-#error "This platform is not supported"
+#error "This platform is not supported (Only Windows is supported"
 #endif

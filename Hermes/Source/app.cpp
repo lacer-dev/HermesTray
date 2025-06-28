@@ -1,114 +1,112 @@
-#include "SDL/init.h"
-#include "SDL/misc.h"
+#include "SDLCPP/SDLCPP.h"
 #include "pch.h"
 #include "app.h"
 #include "error.h"
 #include "system.h"
 #include "globals.h"
-#include "SDL/SDLcpp.h"
+#include "errormessage.h"
 
 namespace {
 
+using namespace Hermes;
+
 void OnClickToggleSleep(void*, SDL_TrayEntry* p_entry) {
-    SDL::TrayEntry entry{p_entry};
-    hermes::ToggleDisplaySleep();
-    Assert(entry.IsChecked() == hermes::IsDisplaySleepDisabled());
+    const Systray::Entry entry{p_entry};
 
-    #ifndef NDEBUG
-    if (hermes::IsDisplaySleepEnabled()) {
-        DebugPrintLn("hermes: Sleep Enabled");
-    } else {
-        DebugPrintLn("hermes: Sleep Disabled");  
-    }
-    #endif
+    if (!ToggleScreenSaver())
+        SDL::ShowSimpleMessageBoxError(messagebox_title_error(), SDL::GetError());
+        
+    Hermes_Assert((entry.Checked() == !ScreenSaverEnabled()));
 }
 
-void OnClickQuit(void*, SDL_TrayEntry* p_entry) {
-    using namespace std::literals;
-
-    SDL_Event event = {.type = SDL_EVENT_QUIT};
-    if (!SDL_PushEvent(&event)) {
-        SDL::ShowSimpleMessageBoxError(hermes::APP_NAME, SDL_GetError());
-    }
+void OnClickQuit(void*, SDL_TrayEntry*) {
+    if (SDL::Event event{SDL::EventType::QUIT}; !SDL::PushEvent(event))
+        SDL::ShowSimpleMessageBoxError(EXECUTABLE_NAME, SDL::GetError());
 }
 
-void OnClickAbout(void*, SDL_TrayEntry* p_entry) {
-    const std::string url = hermes::WEBSITE_URL;    
-    if (!SDL::OpenURL(url)) {
-        SDL::ShowSimpleMessageBoxError(hermes::APP_NAME, SDL_GetError());
-    }
+void OnClickAbout(void*, SDL_TrayEntry*) {
+    if (!SDL::OpenURL(METADATA_WEBSITE_URL))
+        SDL::ShowSimpleMessageBoxError(EXECUTABLE_NAME, SDL::GetError());
 }
 
 };
 
-namespace hermes {
+namespace Hermes {
 
-App::App() {
-    DebugPrint("hermes: Creating App\n");
-    DebugPrintLn("hermes: Initializing SDL...");        
-    SDL::Init(SDL::INIT_VIDEO);
-    DebugPrintLn("hermes: Initializing SDL... (done)");
-    std::atexit(SDL::Quit);
+Application::Application() {
+    // Set metadata for app
+
+    if (std::atexit(SDL::Quit) != 0)
+        LogError("failed to register function with std::atexit");
+
+    if (std::atexit([]{EnableScreenSaver();}) != 0)
+        LogError("failed to register function with std::atexit");
+
+    if (!SDL::SetMetadataName(METADATA_NAME))
+        LogSDLError(SDL::GetError());
+
+    if (!SDL::SetMetadataVersion(METADATA_VERSION))
+        LogSDLError(SDL::GetError());
+
+    if (!SDL::SetMetadataCreator(METADATA_CREATOR))
+        LogSDLError(SDL::GetError());
+
+    if (!SDL::SetMetadataCopyright(METADATA_COPYRIGHT))
+        LogSDLError(SDL::GetError());
+
+    if (!SDL::SetMetadataUrl(METADATA_WEBSITE_URL))
+        LogSDLError(SDL::GetError());
+
+    if (!SDL::SetMetadataType("application"))
+        LogSDLError(SDL::GetError());
+
+    if (!SDL::Init(SDL::INIT_VIDEO))
+        LogSDLError(SDL::GetError());
+
+    Initialize();
 }
 
-App::~App() {
-    DebugPrint("hermes: Destroying App\n");
-    DebugPrintLn("hermes: Uninitializing SDL...");
+Application::~Application() {
     SDL::Quit();
-    DebugPrintLn("hermes: Uninitializing SDL (done)");
 }
 
-void App::Run() {
-    Init();
-    
-    DebugPrintLn("hermes: App Running");
-    SDL_Event* event = nullptr;
+void Application::Run() {
     running = true;
-    while (running) {
-        while (SDL_PollEvent(event))
-            Events(event);
-        WaitMiliseconds(1000 / 10);
+    while (IsRunning()) {
+        SDL::Event event{};
+        while (SDL::PollEvent(event))
+            HandleEvents(event);
+
+        SDL::Delay(1000 / 10);
     }
-    DebugPrintLn("hermes: Quitting (done)");
 }
 
-void App::Init() {
-    SDL::SetMetadataName("hermes Window");
-    SDL::SetMetadataVersion("0.0.1");
-    SDL::SetMetadataCreator("Leon Allotey");
-    SDL::SetMetadataCopyright("Copyright (c) 2025 Leon Allotey");
-    SDL::SetMetadataUrl("https://github.com/lacer-dev/HermesTray");
-    SDL::SetMetadataType("application");
+void Application::Initialize() {
+    using namespace Systray;
 
-    DebugPrintLn("hermes: Loading Resources...");
-    SDL::Surface icon_image = SDL::IMG::Load(gResourceManager.GetPath("icon128.png"));
-    DebugPrintLn("hermes: Loading Resources (done)");
+    DisableScreenSaver();
 
-    DebugPrintLn("hermes: Creating Tray Icon...");
-    
-    icon = std::make_unique<SDL::Tray>(icon_image, "Hermes");
-    auto& menu = icon->CreateMenu();
+    // Load icon image from
+    SDL::Surface image = SDL::IMG::Load(gResourceManager.GetResource("hermes32.png"));
+    if (!image)
+        LogSDLError(SDL::GetError());
 
-    DisableDisplaySleep();
-    std::atexit(EnableDisplaySleep);
-    auto quit = menu.InsertEntry(0, "Quit");
-    menu.InsertSeparator(0);
-    auto toggle = menu.InsertCheckbox(0, "Disable Sleep", true);
-    menu.InsertSeparator(0);
-    auto about = menu.InsertEntry(0, "About Hermes");
-    
-    quit.SetCallback(OnClickQuit);
-    toggle.SetCallback(OnClickToggleSleep);
-    about.SetCallback(OnClickAbout);
-    
-    DebugPrintLn("hermes: Creating Tray Icon (done)");
+    // Create systray icon and its menu
+    icon = std::make_unique<Icon>(image, "Hermes");
+    TrayMenu& menu = icon->Menu();
+
+    // Create menu entries
+    menu.Insert(0, Label("Quit").SetCallback(OnClickQuit));
+    menu.Insert(0, Separator());
+    menu.Insert(0, Checkbox("Disable Sleep", true).SetCallback(OnClickToggleSleep));
+    menu.Insert(0, Separator());
+    menu.Insert(0, Label("About Hermes").SetCallback(OnClickAbout));
 }
 
-void App::Events(SDL_Event* event) {
-    switch (event->type) {
-    case SDL_EVENT_QUIT:
-        DebugPrintLn("hermes: Quitting");
-        Stop();
+void Application::HandleEvents(const SDL::Event& event) {
+    switch (event.Type()) {
+        case SDL::EventType::QUIT: Stop();
+        default: ;
     }
 }
 
