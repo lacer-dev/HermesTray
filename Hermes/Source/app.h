@@ -19,7 +19,7 @@ private:
 private:
     bool running = false;
 private:
-    std::unique_ptr<Systray::Icon> icon;
+    std::unique_ptr<Systray::TIcon> icon;
 };
 
 };

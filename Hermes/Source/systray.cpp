@@ -50,7 +50,7 @@ bool Entry::Checked() const {
 
 //////////////////////////////////////// TrayMenu ////////////////////////////////////////
 
-Entry& TrayMenu::Insert(const std::size_t pos, const EntryData& entry) {
+Entry& TMenu::Insert(const std::size_t pos, const EntryData& entry) {
 	if (pos > std::numeric_limits<int>::max()) {
 		throw std::out_of_range{std::format("menu entry position (which is {}) is out of range", pos)};
 	}
@@ -66,28 +66,35 @@ Entry& TrayMenu::Insert(const std::size_t pos, const EntryData& entry) {
 	return *_entries.emplace(_entries.begin() + static_cast<int>(pos), entry_handle);
 }
 
-Entry& TrayMenu::At(const std::size_t pos) {
+Entry& TMenu::At(const std::size_t pos) {
 	return _entries.at(pos);
 }
 
-void TrayMenu::Remove(const std::size_t pos) {
+void TMenu::Remove(const std::size_t pos) {
 	const auto it = _entries.erase(_entries.begin() + pos);
 	SDL_RemoveTrayEntry(it->Handle());
 }
 
-std::size_t TrayMenu::Length(std::size_t pos) const {
-	int len;
-	SDL_GetTrayEntries(Handle(), &len);
-	return static_cast<std::size_t>(len);
+std::size_t TMenu::Length(std::size_t pos) const {
+	// int len;
+	// SDL_GetTrayEntries(Handle(), &len);
+	// return static_cast<std::size_t>(len);
+	return _entries.size();
 }
 
 //////////////////////////////////////// Icon ////////////////////////////////////////
 
-Icon::Icon(SDL::Surface& icon, const std::string& tooltip, const bool with_menu)
+TIcon::TIcon(handle_type* handle) : _icon{handle}, _menu{SDL_GetTrayMenu(_icon)} {
+
+}
+
+TIcon::TIcon(SDL::Surface& icon, const std::string& tooltip, const bool with_menu)
 : 	_icon{SDL_CreateTray(icon.Handle(), tooltip.c_str())},
 	_menu{with_menu ? SDL_CreateTrayMenu(Handle()) : nullptr} {
 }
 
-Icon::~Icon() { SDL_DestroyTray(_icon); }
+TIcon::~TIcon() {
+	SDL_DestroyTray(_icon);
+}
 
 };

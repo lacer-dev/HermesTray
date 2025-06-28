@@ -41,7 +41,7 @@ class Entry {
 public:
     using handle_type = SDL_TrayEntry;
 
-	Entry(SDL_TrayEntry* handle) : _handle(handle) {}
+    explicit Entry(SDL_TrayEntry* handle) : _handle(handle) {}
 
     handle_type* Handle() const { return _handle; }
 
@@ -50,11 +50,11 @@ private:
     handle_type* _handle;
 };
 
-class TrayMenu {
+class TMenu {
 public:
     using handle_type = SDL_TrayMenu;
 
-    TrayMenu(handle_type* handle) : _menu{handle} {}
+    explicit TMenu(handle_type* handle) : _menu{handle} {}
 
     handle_type* Handle() const { return _menu; }
 
@@ -68,18 +68,19 @@ private:
     std::vector<Entry> _entries;
 };
 
-class Icon {
+class TIcon {
 public:
     using handle_type = SDL_Tray;
 
-    Icon(SDL::Surface& icon, const std::string& tooltip, bool with_menu = true);
-    ~Icon();
+    explicit TIcon(handle_type* handle);
+    TIcon(SDL::Surface& icon, const std::string& tooltip, bool with_menu = true);
+    ~TIcon();
 
     handle_type* Handle() const { return _icon; }
-    TrayMenu& Menu() { return _menu; }
+    TMenu& Menu() { return _menu; }
 private:
     handle_type* _icon;
-    TrayMenu _menu;
+    TMenu _menu;
 };
 
 };

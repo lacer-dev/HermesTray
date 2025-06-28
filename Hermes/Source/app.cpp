@@ -1,5 +1,5 @@
-#include "SDLCPP/SDLCPP.h"
 #include "pch.h"
+#include "SDLCPP/SDLCPP.h"
 #include "app.h"
 #include "error.h"
 #include "system.h"
@@ -11,12 +11,13 @@ namespace {
 using namespace Hermes;
 
 void OnClickToggleSleep(void*, SDL_TrayEntry* p_entry) {
-    const Systray::Entry entry{p_entry};
-
     if (!ToggleScreenSaver())
         SDL::ShowSimpleMessageBoxError(messagebox_title_error(), SDL::GetError());
-        
-    Hermes_Assert((entry.Checked() == !ScreenSaverEnabled()));
+
+    #ifndef NDEBUG
+        const Systray::Entry entry{p_entry};
+        Hermes_Assert((entry.Checked() == !ScreenSaverEnabled()));
+    #endif
 }
 
 void OnClickQuit(void*, SDL_TrayEntry*) {
@@ -70,17 +71,6 @@ Application::~Application() {
     SDL::Quit();
 }
 
-void Application::Run() {
-    running = true;
-    while (IsRunning()) {
-        SDL::Event event{};
-        while (SDL::PollEvent(event))
-            HandleEvents(event);
-
-        SDL::Delay(1000 / 10);
-    }
-}
-
 void Application::Initialize() {
     using namespace Systray;
 
@@ -92,8 +82,8 @@ void Application::Initialize() {
         LogSDLError(SDL::GetError());
 
     // Create systray icon and its menu
-    icon = std::make_unique<Icon>(image, "Hermes");
-    TrayMenu& menu = icon->Menu();
+    icon = std::make_unique<TIcon>(image, "Hermes");
+    TMenu& menu = icon->Menu();
 
     // Create menu entries
     menu.Insert(0, Label("Quit").SetCallback(OnClickQuit));
@@ -101,6 +91,17 @@ void Application::Initialize() {
     menu.Insert(0, Checkbox("Disable Sleep", true).SetCallback(OnClickToggleSleep));
     menu.Insert(0, Separator());
     menu.Insert(0, Label("About Hermes").SetCallback(OnClickAbout));
+}
+
+void Application::Run() {
+    running = true;
+    while (IsRunning()) {
+        SDL::Event event{};
+        while (SDL::PollEvent(event))
+            HandleEvents(event);
+
+        SDL::Delay(1000 / 10);
+    }
 }
 
 void Application::HandleEvents(const SDL::Event& event) {

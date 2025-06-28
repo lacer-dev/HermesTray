@@ -2,7 +2,6 @@
 
 #include "system.h"
 #include "SDLCPP/SDLCPP.h"
-#include "error.h"
 
 namespace Hermes {
 
