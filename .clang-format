@@ -1,0 +1,66 @@
+Language: Cpp
+
+ColumnLimit: 0
+UseTab: Always
+AccessModifierOffset: -4
+DerivePointerAlignment: false
+PointerAlignment: Left
+WrapNamespaceBodyWithEmptyLines: Always
+ShortNamespaceLines: 1
+FixNamespaceComments: true
+
+# EnumTrailingComma: Remove
+
+BinPackParameters: OnePerLine
+
+BitFieldColonSpacing: Both
+
+InsertBraces: true
+IndentAccessModifiers: false # See 'AccessModifierOffset'
+IndentCaseLabels: false
+IndentPPDirectives: AfterHash
+IndentRequiresClause: true
+IndentWidth: 4
+IndentWrappedFunctionNames: true
+
+AllowShortEnumsOnASingleLine: false
+# AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+
+SpacesInParens: Never
+SpacesInSquareBrackets: false
+SpaceBeforeInheritanceColon: true
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeCaseColon: false
+SpaceBeforeAssignmentOperators: true
+SpaceAfterTemplateKeyword: false
+SpaceAfterLogicalNot: false
+SpaceAfterCStyleCast: false
+
+BreakAdjacentStringLiterals: true
+BreakAfterAttributes: Always
+BreakBeforeBraces: Custom # See 'BraceWrapping'
+BreakBeforeConceptDeclarations: Always
+# BreakBeforeTemplateCloser: false
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeColon
+BreakFunctionDefinitionParameters: false
+BreakTemplateDeclarations: Yes
+
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: true
+  AfterControlStatement: Always
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeLambdaBody: false
+  BeforeWhile: true
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
