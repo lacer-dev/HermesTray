@@ -1,6 +1,0 @@
-[submodule "Hermes/Vendor/SDL"]
-	path = Hermes/Vendor/SDL
-	url = https://github.com/libsdl-org/SDL
-[submodule "Hermes/Vendor/SDL_image"]
-	path = Hermes/Vendor/SDL_image
-	url = https://github.com/libsdl-org/SDL_image
