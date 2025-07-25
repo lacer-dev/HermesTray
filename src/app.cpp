@@ -19,7 +19,8 @@ struct
 
 using namespace Hermes;
 
-std::expected<void, std::string> printunexpectedstr(const std::string& error)
+template<class E>
+std::expected<void, std::string> printunex(const E& error)
 {
     printerror("{}", error);
     return std::unexpected(error);
@@ -57,20 +58,77 @@ void OnClickAbout(void*, SDL_TrayEntry*)
 {
     if (!SDL_OpenURL(g_hermes_metadata.website_url.c_str()))
     {
-	ShowErrorMessageBox("could not open url");
+	    ShowErrorMessageBox("could not open url");
         eprintln("{}: {}", colors(Ansi::Teal, "SDL"), SDL_GetError());
     }
 }
 
-SDL_TrayEntry* InsertTrayEntryWithCallback(SDL_TrayMenu* menu, int pos, std::string_view label = {}, SDL_TrayCallback callback = nullptr, int flags = 0)
+class Entry
 {
-    SDL_TrayEntry* entry = SDL_InsertTrayEntryAt(menu, pos, label.data(), flags);
-    if (callback)
+private:
+    SDL_TrayEntry* _handle;
+    friend class Menu;
+public:
+    void set_callback(SDL_TrayCallback callback)
     {
-	SDL_SetTrayEntryCallback(entry, callback, nullptr);
+        SDL_SetTrayEntryCallback(_handle, callback, nullptr);
     }
-    return entry;
-}
+};
+
+class Menu
+{
+private:
+    SDL_TrayMenu* _handle;
+    friend class Tray;
+public:
+    auto insert_label(int pos, const std::string& label) -> std::expected<Entry, std::string>
+    {
+        return insert_or_unexpected(pos, label.c_str());
+    }
+
+    auto insert_checkbox(int pos, const std::string& label, bool checked = false) -> std::expected<Entry, std::string>
+    {
+        return insert_or_unexpected(pos, label.c_str(), SDL_TRAYENTRY_CHECKBOX | ((checked) ? SDL_TRAYENTRY_CHECKED: 0));
+    }
+
+    auto insert_separator(int pos) -> std::expected<Entry, std::string>
+    {
+        return insert_or_unexpected(pos);
+    }
+private:
+    auto insert_or_unexpected(int pos, const char* = nullptr, int flags = 0) -> std::expected<Entry, std::string>
+    {
+        auto entry_handle = SDL_InsertTrayEntryAt(_handle, pos, nullptr, flags);
+        if (entry_handle == nullptr)
+        {
+            return std::unexpected("entry position is out of bounds");
+        }
+        else
+        {
+            Entry entry;
+            entry._handle = entry_handle;
+            return entry;
+        }
+    }
+};
+
+class Tray
+{
+private:
+    SDL_Tray* _handle;
+public:
+    Tray(SDL_Surface* icon = nullptr, const std::string& tooltip = {})
+    : _handle{SDL_CreateTray(icon, (tooltip.empty() ? nullptr : tooltip.c_str()))} {}
+
+    ~Tray() { SDL_DestroyTray(_handle); }
+    
+    Menu new_menu()
+    {
+        Menu menu;
+        menu._handle = SDL_CreateTrayMenu(_handle);
+        return menu;
+    }
+};
 
 }; // namespace
 
@@ -90,12 +148,12 @@ Application::Application()
         printmsg(ERR_PREFIX, "failed to register 'EnableScreenSaver' with std::atexit");
     }
 
-    Meta::SetAppName(g_hermes_metadata.name).or_else(printunexpectedstr);
-    Meta::SetAppVersion(g_hermes_metadata.version).or_else(printunexpectedstr);
-    Meta::SetAppCreator(g_hermes_metadata.author).or_else(printunexpectedstr);
-    Meta::SetAppCopyright(g_hermes_metadata.copyright).or_else(printunexpectedstr);
-    Meta::SetAppURL(g_hermes_metadata.website_url).or_else(printunexpectedstr);
-    Meta::SetAppType(g_hermes_metadata.type).or_else(printunexpectedstr);
+    Meta::SetAppName(g_hermes_metadata.name).or_else(printunex<std::string>);
+    Meta::SetAppVersion(g_hermes_metadata.version).or_else(printunex<std::string>);
+    Meta::SetAppCreator(g_hermes_metadata.author).or_else(printunex<std::string>);
+    Meta::SetAppCopyright(g_hermes_metadata.copyright).or_else(printunex<std::string>);
+    Meta::SetAppURL(g_hermes_metadata.website_url).or_else(printunex<std::string>);
+    Meta::SetAppType(g_hermes_metadata.type).or_else(printunex<std::string>);
 
     Init();
 }
@@ -107,7 +165,7 @@ Application::~Application()
 
 void Application::Init()
 {
-    DisableScreenSaver().or_else(printunexpectedstr);
+    DisableScreenSaver().or_else(printunex<std::string>);
 
     auto p_image =
 	IMG_Load((processpath().parent_path() / "hermes32.png").string().c_str());
@@ -116,14 +174,26 @@ void Application::Init()
         printmsg(SDL_PREFIX, "{}", SDL_GetError());
     }
 
-    SDL_Tray* p_icon = SDL_CreateTray(p_image, "Hermes");
-    SDL_TrayMenu* p_menu = SDL_CreateTrayMenu(p_icon);
+    // SDL_Tray* p_icon = SDL_CreateTray(p_image, "Hermes");
+    // SDL_TrayMenu* p_menu = SDL_CreateTrayMenu(p_icon);
 
-    InsertTrayEntryWithCallback(p_menu, 0, "Quit", OnClickQuit);
-    InsertTrayEntryWithCallback(p_menu, 0);
-    InsertTrayEntryWithCallback(p_menu, 0, "Disable Sleep", OnClickToggleSleep, SDL_TRAYENTRY_CHECKED);
-    InsertTrayEntryWithCallback(p_menu, 0);
-    InsertTrayEntryWithCallback(p_menu, 0, "About Hermes", OnClickAbout);
+    // SDL_TrayEntry* entry = SDL_InsertTrayEntryAt(p_menu, 0, "Quit", 0x0);
+	// SDL_SetTrayEntryCallback(entry, OnClickQuit, nullptr);
+    // SDL_TrayEntry* entry = SDL_InsertTrayEntryAt(p_menu, 0, nullptr, 0x0);
+    // SDL_TrayEntry* entry = SDL_InsertTrayEntryAt(p_menu, 0, "Disable Sleep", SDL_TRAYENTRY_CHECKED);
+    // SDL_SetTrayEntryCallback(entry, OnClickToggleSleep, nullptr);
+    // SDL_TrayEntry* entry = SDL_InsertTrayEntryAt(p_menu, 0, nullptr, 0x0);
+    // SDL_TrayEntry* entry = SDL_InsertTrayEntryAt(p_menu, 0, "About Hermes", 0x0);
+    // SDL_SetTrayEntryCallback(entry, OnClickAbout, nullptr);
+
+    Tray tray{p_image, "Hermes"};
+    Menu menu = tray.new_menu();
+
+    menu.insert_label(0, "Quit")->set_callback(OnClickQuit);
+    menu.insert_separator(0);
+    menu.insert_checkbox(0, "Disable Sleep")->set_callback(OnClickToggleSleep);
+    menu.insert_separator(0);
+    menu.insert_label(0, "About Hermes")->set_callback(OnClickAbout);
 }
 
 void Application::Run()
