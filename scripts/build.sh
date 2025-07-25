@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# line <fill-str> [begin-str]
+line() {
+    printf -- "%s" "$2"
+    printf -- "$1%.0s" $(seq -s ' ' 0 "$(($(tput cols) - 1 - ${#2}))")
+}
 # pcolor
 # pcolor <color> [string]
 pcolor() {
@@ -19,30 +24,26 @@ brighten() {
     pcolor "$brightness" "${@:$start_i}"
 }
 
+
 SL=$(pcolor 98 "$(basename $0)")
 SLC=$(pcolor 98 "$(basename $0): ")
 EL=$(pcolor 1 "error")
 ELC=$(pcolor 1 "error: ")
 
-# pmsg <string>
-pmsg() {
+# build_pmsg <string>
+build_pmsg() {
     printf -- "%s" "$SLC$(brighten "${@:1}")"
 }
-# perror <string>
-perror() {
+# build_perror <string>
+build_perror() {
     printf -- "%s" "$SLC$ELC$(brighten "${@:1}")" >&2
 }
-# pnote <string>
-pnote() {
+# build_pnote <string>
+build_pnote() {
     printf -- "%s" "$SLC$(pcolor 3 "note: ")$(brighten "${@:1}")" >&2
 }
-# line <fill-str> [begin-str]
-line() {
-    printf -- "%s" "$2"
-    printf -- "$1%.0s" $(seq -s ' ' 0 "$(($(tput cols) - 1 - ${#2}))")
-}
 
-config2cmake() {
+translate_build_type() {
     case "${1,,}" in
     (debug | deb)
         printf "Debug"
@@ -77,22 +78,27 @@ printhelp() {
     echo "  2 if there was an error otherwise."
 }
 
+build_exit() {
+    build_pmsg "exiting script with exit code $1... \n"
+    exit $1
+}
 ##################################################################################################################
 # parse command-line options
 OPTIONS=$(getopt -n "$SLC$EL$(brighten)" -o "hc:s" -l "help,clean,config:,suppress-build-output," -- "$@")
 ec=$?
-if [ $ec -eq 1  ]; then
-    pcolor
-    exit 2
-elif [ $ec -gt 1 ]; then
-    exit 2
+if [[ $ec -eq 0 ]]; then
+    eval set -- $OPTIONS
+else
+    if [[ $ec -eq 1  ]]; then 
+        pcolor
+    else
+        build_perror "getopt failed with exit code $ec."
+    fi
+    build_exit 2
 fi
-
-eval set -- $OPTIONS
-
+CMAKE_BUILD_TYPE=Debug
 RUN_CLEAN='n'
 SUPRESS_OUT='n'
-CMAKE_BUILD_TYPE=Debug
 while [ $# -gt 0 ]; do
     case $1 in
     (-h | --help)
@@ -106,10 +112,10 @@ while [ $# -gt 0 ]; do
         SUPRESS_OUT='y'
         ;;
     (-c | --config)
-        CMAKE_BUILD_TYPE=$(config2cmake $2)
+        CMAKE_BUILD_TYPE=$(translate_build_type $2)
         if [[ $? -ne 0 ]]; then
-            perror "unknown build configuration '$2'\n" >&2
-            exit 2
+            build_perror "unknown build configuration '$2'\n" >&2
+            build_exit 2
         fi
         shift
         ;;
@@ -118,8 +124,8 @@ while [ $# -gt 0 ]; do
         break
         ;;
     (-*)
-        perror "unrecognized option '$1'"
-        exit 2
+        build_perror "unrecognized option '$1'"
+        build_exit 2
         ;;
     (*)
         break
@@ -129,81 +135,84 @@ while [ $# -gt 0 ]; do
 done
 # there should be no more arguments
 if [ $# -ne 0 ]; then
-    perror "invalid argument '$1'.\n"
-    exit 2
+    for arg in $@; do
+        build_perror "invalid argument '$arg'.\n"
+    done
+    build_exit 2
 fi
 
 ##################################################################################################################
-TARGET="hermes"
+export TARGET="hermes"
 
-generate_build() {
+build_generate() {
     cmake -S . -B build -G "Unix Makefiles" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE;
 }
 
 build_target() {
-    cmake --build build
+    cmake --build build --target $TARGET
 }
 export -f build_target
 
-clean() {
+build_clean() {
     rm -rf build/*;
 }
 
-trap "pmsg \"exiting build script...\"" EXIT
-
 # run clean if '--clean' option is specified
 if [[ $RUN_CLEAN == 'y' ]]; then
-    pmsg "cleaning build directory...\n"
-    [[ $SUPRESS_OUT == 'y' ]] && OUT=$(clean) || clean
+    build_pmsg "cleaning build directory...\n"
+    [[ $SUPRESS_OUT == 'y' ]] && OUT=$(build_clean) || build_clean
     ec=$?
     if [[ 0 -ne $ec ]]; then
-        perror "clean failed with cmake exit code $ec. here is the output:\n"
+        build_perror "clean failed (with cmake exit code $ec). here is the output:\n"
         echo "$OUT" >&2
-        exit 2
+        build_exit 2
     else
-        pmsg "successfully cleaned build directory.\n"
-        exit 0
+        build_pmsg "successfully cleaned build directory.\n"
+        build_exit 0
     fi
 fi
 
 # otherwise run cmake and build
-pmsg "running build script for '${CMAKE_BUILD_TYPE,,}'...\n"
-pmsg "generating build files...\n"
+build_pmsg "running build script for '${CMAKE_BUILD_TYPE,,}'...\n"
+build_pmsg "generating build files...\n"
 mkdir -p build
-OUT=$(generate_build 2>&1)
+OUT=$(build_generate 2>&1)
 ec=$?
 if [[ 0 -ne $ec ]]; then
-    perror "generating build files failed with cmake exit code $ec.\n"
-    pnote "output:\n"
+    build_perror "generating build files failed (with cmake exit code $ec).\n"
+    build_pnote "output:\n"
     brighten 21 $(line ─ "──cmake")
     echo "$OUT" >&2
     brighten 21 $(line ─)
-    exit 2
+    build_exit 2
 else
-    pmsg "successfully generated build files.\n"
+    build_pmsg "successfully generated build files.\n"
 fi
 ##################################################
-pmsg "building target '$TARGET'...\n"
+build_pmsg "building target '$TARGET'...\n"
 if [[ $SUPRESS_OUT == 'n' ]]; then
     brighten 21 $(line ─ "──build")
     build_target
+    ec=$?
     brighten 21 $(line ─)
 else
-    OUT=$(script -e -q /dev/null -c "build_target" 2>&1)
+    # OUT=$(script -e -q /dev/null -c "build_target" 2>&1)
+    OUT=$(build_target 2>&1)
+    ec=$?
 fi
-ec=$?
 if [[ 0 -ne $ec ]]; then
-    perror "build failed with cmake exit code $ec.\n"
+    build_perror "build failed (with cmake exit code $ec).\n"
     if [[ $SUPRESS_OUT == 'y' ]]; then
-        pnote "output:\n"
+        build_pnote "output:\n"
         brighten 21 $(line ─ "──build")
         echo "$OUT" >&2
         brighten 21 $(line ─)
     fi
-    exit 1
+    build_exit 1
 else
-    pmsg "successfully built target '$TARGET'.\n"
-    pmsg "build was output written to \"./bin/${CMAKE_BUILD_TYPE,,}\".\n"
+    # e
+    build_pmsg "successfully built target '$TARGET'.\n"
+    build_pmsg "build output was written to \"./bin/${CMAKE_BUILD_TYPE,,}\".\n"
+    build_exit 0
 fi
 ##################################################
-exit 0
