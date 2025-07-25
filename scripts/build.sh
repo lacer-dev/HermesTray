@@ -11,10 +11,12 @@ pcolor() {
         printf "\033[38;5;$1m${@:2}\033[m"
     fi
 }
-# pnote <string>
-brighten () {
-    printf -- "%s" "$(pcolor 15 "$@")"
-    # printf "%s" "$SLC$(pcolor 3 "note: ")$(pcolor 15 "${@:1}")" >&2
+# brighten <0-23 | 'm'> <string>...
+brighten() {
+    local brightness=15
+    local start_i=2
+    [[ "$1" =~ ^[0-9]+$ && "$1" -ge 0 && "$1" -lt 23 ]] && brightness=$((232 + $1)) || start_i=1
+    pcolor "$brightness" "${@:$start_i}"
 }
 
 SL=$(pcolor 98 "$(basename $0)")
@@ -22,26 +24,22 @@ SLC=$(pcolor 98 "$(basename $0): ")
 EL=$(pcolor 1 "error")
 ELC=$(pcolor 1 "error: ")
 
-# message <string>
-message () {
+# pmsg <string>
+pmsg() {
     printf -- "%s" "$SLC$(brighten "${@:1}")"
 }
 # perror <string>
-perror () {
+perror() {
     printf -- "%s" "$SLC$ELC$(brighten "${@:1}")" >&2
 }
 # pnote <string>
-pnote () {
+pnote() {
     printf -- "%s" "$SLC$(pcolor 3 "note: ")$(brighten "${@:1}")" >&2
 }
-# repeats <n> <string>
-repeats () {
-    printf -- "$2%.0s" $(seq -s ' ' 0 $1)
-}
 # line <fill-str> [begin-str]
-line () {
+line() {
     printf -- "%s" "$2"
-    repeats "$(($(tput cols) - 1 - ${#2}))" $1
+    printf -- "$1%.0s" $(seq -s ' ' 0 "$(($(tput cols) - 1 - ${#2}))")
 }
 
 config2cmake() {
@@ -66,11 +64,12 @@ printhelp() {
     echo "Usage: $(basename $0) [options]"
     echo
     echo "Options:"
-    echo "      --clean                     Cleans the build directory."
-    echo "  -c, --config <config>           Specifies the build configuration. Allowed values are (case-insensitive) 'debug', 'deb' (for Debug),"
-    echo "                                  'release', 'rel' (for Release), 'rwd', and 'relwithdebinfo' (for RelWithDebInfo) Default value is 'debug'"
-    echo "  -s, --supress-build-output      Supress standard output (but not standard error) during build."
-    echo "  -h, --help                      Display this message and exit."
+    echo "      --clean                Cleans the build directory."
+    echo "  -c, --config <config>      Specifies the build configuration. Allowed values are (case-insensitive) 'debug', 'deb' (for Debug),"
+    echo "                             'release', 'rel' (for Release), 'rwd', and 'relwithdebinfo' (for RelWithDebInfo). The default value"
+    echo "                             is 'debug'"
+    echo "  -s, --supress-build-output Supress standard output (but not standard error) during build."
+    echo "  -h, --help                 Display this message and exit."
     echo
     echo "Exit Codes:"
     echo "  0 if build was successful,"
@@ -142,18 +141,19 @@ generate_build() {
 }
 
 build_target() {
-    cmake --build build -j 9
+    cmake --build build
 }
+export -f build_target
 
 clean() {
     rm -rf build/*;
 }
 
-trap "message \"exiting build script...\"" EXIT
+trap "pmsg \"exiting build script...\"" EXIT
 
 # run clean if '--clean' option is specified
 if [[ $RUN_CLEAN == 'y' ]]; then
-    message "cleaning build directory...\n"
+    pmsg "cleaning build directory...\n"
     [[ $SUPRESS_OUT == 'y' ]] && OUT=$(clean) || clean
     ec=$?
     if [[ 0 -ne $ec ]]; then
@@ -161,48 +161,49 @@ if [[ $RUN_CLEAN == 'y' ]]; then
         echo "$OUT" >&2
         exit 2
     else
-        message "successfully cleaned build directory.\n"
+        pmsg "successfully cleaned build directory.\n"
         exit 0
     fi
 fi
 
 # otherwise run cmake and build
-message "running build script for '${CMAKE_BUILD_TYPE,,}'...\n"
-message "generating build files...\n"
+pmsg "running build script for '${CMAKE_BUILD_TYPE,,}'...\n"
+pmsg "generating build files...\n"
 mkdir -p build
 OUT=$(generate_build 2>&1)
 ec=$?
 if [[ 0 -ne $ec ]]; then
-    perror "cmake failed with exit code $ec. here is the output:\n"
-    pcolor $(line ─ "──cmake")
+    perror "generating build files failed with cmake exit code $ec.\n"
+    pnote "output:\n"
+    brighten 21 $(line ─ "──cmake")
     echo "$OUT" >&2
-    pcolor $(line ─)
+    brighten 21 $(line ─)
     exit 2
 else
-    message "successfully generated build files.\n"
+    pmsg "successfully generated build files.\n"
 fi
 ##################################################
-message "building target '$TARGET'...\n"
+pmsg "building target '$TARGET'...\n"
 if [[ $SUPRESS_OUT == 'n' ]]; then
-    pcolor $(line ─ "──build")
+    brighten 21 $(line ─ "──build")
     build_target
-    pcolor $(line ─)
+    brighten 21 $(line ─)
 else
     OUT=$(script -e -q /dev/null -c "build_target" 2>&1)
 fi
 ec=$?
 if [[ 0 -ne $ec ]]; then
-    perror "cmake --build failed with exit code $ec.\n"
+    perror "build failed with cmake exit code $ec.\n"
     if [[ $SUPRESS_OUT == 'y' ]]; then
         pnote "output:\n"
-        pcolor $(line ─ "──build")
+        brighten 21 $(line ─ "──build")
         echo "$OUT" >&2
-        pcolor $(line ─)
+        brighten 21 $(line ─)
     fi
     exit 1
 else
-    message "successfully built target '$TARGET'.\n"
-    message "build was output written to \"./bin/${CMAKE_BUILD_TYPE,,}\".\n"
+    pmsg "successfully built target '$TARGET'.\n"
+    pmsg "build was output written to \"./bin/${CMAKE_BUILD_TYPE,,}\".\n"
 fi
 ##################################################
 exit 0
