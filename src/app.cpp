@@ -1,49 +1,64 @@
 #include "app.h"
-#include "SDLCPP/SDLCPP.h"
 #include "error.h"
-#include "globals.h"
 #include "pch.h"
-#include "system.h"
-#include <SDL3/SDL.h>
+#include "sys.h"
+#include <expected>
 
 namespace
 {
 
+struct
+{
+    const std::string name = "HermesTray";
+    const std::string version = "0.1.1";
+    const std::string author = "Leon Allotey";
+    const std::string copyright = "Copyright (c) 2025 Leon Allotey";
+    const std::string website_url = "https://github.com/lacer-dev/HermesTray";
+    const std::string type = "application";
+} g_hermes_metadata;
+
 using namespace Hermes;
+
+std::expected<void, std::string> printunexpectedstr(const std::string& error)
+{
+    printerror("{}", error);
+    return std::unexpected(error);
+}
 
 void ShowErrorMessageBox(const std::string& message)
 {
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, messagebox_title_error().c_str(), message.c_str(), nullptr);
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
+			     messagebox_title_error().c_str(), message.c_str(),
+			     nullptr);
 }
 
 void OnClickToggleSleep(void*, SDL_TrayEntry* p_entry)
 {
     auto result = ScreenSaverEnabled() ? DisableScreenSaver() : EnableScreenSaver();
-
     if (!result)
     {
-	ShowErrorMessageBox("could not toggle sleep");
+        ShowErrorMessageBox(result.error());
     }
 
 #ifndef NDEBUG
-    Hermes_Assert((SDL_GetTrayEntryChecked(p_entry) == !ScreenSaverEnabled()));
-#endif
+    hermes_assert((SDL_GetTrayEntryChecked(p_entry) == !ScreenSaverEnabled()));
+#endif  
 }
 
 void OnClickQuit(void*, SDL_TrayEntry*)
 {
     if (SDL_Event event{SDL_EVENT_QUIT}; !SDL_PushEvent(&event))
     {
-	log_last_sdl_error();
+        eprintln("{}: {}", colors(Ansi::Teal, "SDL"), SDL_GetError());
     }
 }
 
 void OnClickAbout(void*, SDL_TrayEntry*)
 {
-    if (!SDL_OpenURL(METADATA_WEBSITE_URL.c_str()))
+    if (!SDL_OpenURL(g_hermes_metadata.website_url.c_str()))
     {
 	ShowErrorMessageBox("could not open url");
-	log_last_sdl_error();
+        eprintln("{}: {}", colors(Ansi::Teal, "SDL"), SDL_GetError());
     }
 }
 
@@ -67,70 +82,38 @@ Application::Application()
     // Set metadata for app
     if (std::atexit(SDL_Quit) != 0)
     {
-	logerror("failed to register function with std::atexit");
+        printmsg(ERR_PREFIX, "failed to register 'SDL_Quit' with std::atexit");
     }
 
     if (std::atexit([] { EnableScreenSaver(); }) != 0)
     {
-	logerror("failed to register function with std::atexit");
+        printmsg(ERR_PREFIX, "failed to register 'EnableScreenSaver' with std::atexit");
     }
 
-    if (!SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING, METADATA_NAME.c_str()))
-    {
-	log_last_sdl_error();
-    }
-
-    if (!SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_VERSION_STRING, METADATA_VERSION.c_str()))
-    {
-	log_last_sdl_error();
-    }
-
-    if (!SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_CREATOR_STRING, METADATA_CREATOR.c_str()))
-    {
-	log_last_sdl_error();
-    }
-
-    if (!SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING, METADATA_COPYRIGHT.c_str()))
-    {
-	log_last_sdl_error();
-    }
-
-    if (!SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING, METADATA_WEBSITE_URL.c_str()))
-    {
-	log_last_sdl_error();
-    }
-
-    if (!SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "application"))
-    {
-	log_last_sdl_error();
-    }
-
-    if (!SDL_Init(SDL_INIT_VIDEO))
-    {
-	log_last_sdl_error();
-    }
+    Meta::SetAppName(g_hermes_metadata.name).or_else(printunexpectedstr);
+    Meta::SetAppVersion(g_hermes_metadata.version).or_else(printunexpectedstr);
+    Meta::SetAppCreator(g_hermes_metadata.author).or_else(printunexpectedstr);
+    Meta::SetAppCopyright(g_hermes_metadata.copyright).or_else(printunexpectedstr);
+    Meta::SetAppURL(g_hermes_metadata.website_url).or_else(printunexpectedstr);
+    Meta::SetAppType(g_hermes_metadata.type).or_else(printunexpectedstr);
 
     Init();
 }
 
-Application::~Application()
+Application::~Application() 
 {
     SDL_Quit();
 }
 
 void Application::Init()
 {
-    using namespace Systray;
+    DisableScreenSaver().or_else(printunexpectedstr);
 
-    if (auto result = DisableScreenSaver(); !result)
-    {
-	logerror(result.error());
-    }
-
-    auto p_image = IMG_Load((processpath().parent_path() / "hermes32.png").string().c_str());
+    auto p_image =
+	IMG_Load((processpath().parent_path() / "hermes32.png").string().c_str());
     if (!p_image)
     {
-	log_last_sdl_error();
+        printmsg(SDL_PREFIX, "{}", SDL_GetError());
     }
 
     SDL_Tray* p_icon = SDL_CreateTray(p_image, "Hermes");
@@ -146,23 +129,19 @@ void Application::Init()
 void Application::Run()
 {
     running = true;
+
+    SDL_Event last_event;
     while (running)
     {
-	SDL_Event event;
-	while (SDL_PollEvent(&event))
-	{
-	    HandleEvents(event);
-	}
+        while (SDL_PollEvent(&last_event))
+        {
+            if (last_event.type == SDL_EVENT_QUIT)
+            {
+            running = false;
+            }
+        }
 
-	SDL_Delay(1000 / 10);
-    }
-}
-
-void Application::HandleEvents(const SDL_Event& event)
-{
-    if (event.type == SDL_EVENT_QUIT)
-    {
-	running = false;
+	    SDL_Delay(1000 / 10);
     }
 }
 

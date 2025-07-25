@@ -5,8 +5,10 @@
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
+#include <expected>
 #include <filesystem>
 #include <format>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <source_location>
@@ -19,7 +21,7 @@
 #include <SDL3_image/SDL_image.h>
 
 #ifdef _WIN32
-#    include <windows.h>
+#include <windows.h>
 #else
-#    error "This platform is not supported (Only Windows is supported)"
+#error "This platform is not supported (Only Windows is supported)"
 #endif

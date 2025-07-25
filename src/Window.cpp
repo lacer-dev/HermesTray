@@ -1,29 +1,26 @@
 #include "Window.h"
-#include "SDLCPP/SDLCPP.h"
 #include "pch.h"
 
 namespace Hermes
 {
 
-WindowProperties::WindowProperties() : _id{SDL_CreateProperties()}
-{
-}
+WindowProperties::WindowProperties() : _id{SDL_CreateProperties()} {}
 
-WindowProperties::~WindowProperties()
-{
-    SDL_DestroyProperties(ID());
-}
+WindowProperties::~WindowProperties() { SDL_DestroyProperties(ID()); }
 
-WindowProperties::WindowProperties(const std::string& title, const int width, const int height) : WindowProperties{}
+WindowProperties::WindowProperties(const std::string& title, const int width, const int height)
+    : WindowProperties{}
 {
     SetTitle(title);
     SetWidth(width);
     SetHeight(height);
 }
 
-WindowProperties::WindowProperties(WindowProperties&& other) noexcept : _id{std::exchange(other._id, 0)} {}
+WindowProperties::WindowProperties(WindowProperties&& other) noexcept
+    : _id{std::exchange(other._id, 0)} {}
 
-WindowProperties& WindowProperties::operator=(WindowProperties&& other) noexcept
+WindowProperties&
+    WindowProperties::operator=(WindowProperties&& other) noexcept
 {
     if (this != &other)
     {
@@ -36,7 +33,8 @@ WindowProperties& WindowProperties::operator=(WindowProperties&& other) noexcept
 
 WindowProperties& WindowProperties::SetTitle(const std::string& title)
 {
-    SDL_SetStringProperty(ID(), SDL_PROP_WINDOW_CREATE_TITLE_STRING, title.c_str());
+    SDL_SetStringProperty(ID(), SDL_PROP_WINDOW_CREATE_TITLE_STRING,
+			  title.c_str());
     return *this;
 }
 
@@ -61,14 +59,10 @@ WindowProperties& WindowProperties::SetHeight(const int height)
 
 ////////////////////////////// Window //////////////////////////////
 
-Window::Window(WindowProperties&& properties) : _properties{std::move(properties)},
-						_handle{SDL_CreateWindowWithProperties(_properties.ID())}
-{
-}
+Window::Window(WindowProperties&& properties)
+    : _properties{std::move(properties)},
+      _handle{SDL_CreateWindowWithProperties(_properties.ID())} {}
 
-Window::~Window()
-{
-    SDL_DestroyWindow(Handle());
-}
+Window::~Window() { SDL_DestroyWindow(Handle()); }
 
 } // namespace Hermes

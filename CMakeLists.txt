@@ -26,20 +26,21 @@ set(SRC_DIR     ${CMAKE_SOURCE_DIR}/src)
 set(RES_DIR     ${CMAKE_SOURCE_DIR}/resources)
 set(PCH         ${SRC_DIR}/pch.h)
 set(SOURCES
-    ${SRC_DIR}/windows/windows_system.cpp
     ${SRC_DIR}/app.cpp
     ${SRC_DIR}/main.cpp
-    ${SRC_DIR}/system.cpp
-    ${SRC_DIR}/systray.cpp
+    ${SRC_DIR}/sys.cpp
     ${SRC_DIR}/window.cpp
     ${SRC_DIR}/window.h
 )
+
+list(APPEND SOURCES $<$<PLATFORM_ID:Windows>:${SRC_DIR}/sys/win32/screensaver.cpp>)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${BIN_DIR})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${BIN_DIR})
 
 add_compile_options(-static-libstdc++ -static-libgcc)
+link_libraries(stdc++)
 add_compile_options(-Wall -Wextra -Wpedantic -Wno-unused)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
