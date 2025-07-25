@@ -18,7 +18,7 @@ BitFieldColonSpacing: Both
 InsertBraces: true
 IndentAccessModifiers: false # See 'AccessModifierOffset'
 IndentCaseLabels: false
-IndentPPDirectives: AfterHash
+IndentPPDirectives: None
 IndentRequiresClause: true
 IndentWidth: 4
 IndentWrappedFunctionNames: true
