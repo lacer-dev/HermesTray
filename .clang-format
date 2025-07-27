@@ -69,7 +69,7 @@ BraceWrapping:
 
 IncludeBlocks: Regroup
 IncludeCategories:
-  - Regex:          'pch.h'
+  - Regex:          '(.*/)?pch.h'
     CaseSensitive:  true
     Priority:       -1
     SortPriority:   -1
