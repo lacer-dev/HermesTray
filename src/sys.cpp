@@ -2,27 +2,9 @@
 
 #include "sys.h"
 
-#include <unistd.h>
-
 #include "error.h"
 
 namespace hermes {
-
-namespace process {
-
-	std::filesystem::path procpath()
-	{
-		// std::string buffer;
-		// buffer.reserve(1024);
-		// int bytes_written = readlink("/proc/self/exe", buffer.data(),
-		// buffer.size()); if (bytes_written == -1)
-		//     std::perror("readlink()");
-		// buffer.data()[bytes_written] == '\0';
-		// return {buffer};
-		return std::filesystem::path{SDL_GetBasePath()} / "hermes.exe";
-	}
-
-} // namespace process
 
 namespace Meta {
 
