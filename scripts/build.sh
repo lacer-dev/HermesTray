@@ -54,6 +54,9 @@ translate_build_type() {
     (rwd | relwithdebinfo)
         printf "RelWithDebInfo"
         ;;
+    (msr | minsizerel)
+        printf "MinSizeRel"
+        ;;
     (*) 
         return 1
     esac
@@ -67,8 +70,9 @@ printhelp() {
     echo "Options:"
     echo "      --clean                Cleans the build directory."
     echo "  -c, --config <config>      Specifies the build configuration. Allowed values are (case-insensitive) 'debug', 'deb' (for Debug),"
-    echo "                             'release', 'rel' (for Release), 'rwd', and 'relwithdebinfo' (for RelWithDebInfo). The default value"
-    echo "                             is 'debug'"
+    echo "                             'release', 'rel' (for Release), 'rwd', and 'relwithdebinfo' (for RelWithDebInfo). If not specified, the"
+    echo "                             default value is 'debug'"
+    echo "  -j, --parallel <jobs>      Builds in parallel with <jobs> number of jobs. If not specified, the default value is nproc + 1."
     echo "  -s, --supress-build-output Supress standard output (but not standard error) during build."
     echo "  -h, --help                 Display this message and exit."
     echo
@@ -84,7 +88,7 @@ build_exit() {
 }
 ##################################################################################################################
 # parse command-line options
-OPTIONS=$(getopt -n "$SLC$EL$(brighten)" -o "hc:s" -l "help,clean,config:,suppress-build-output," -- "$@")
+OPTIONS=$(getopt -n "$SLC$EL$(brighten)" -o "hc:j:s" -l "help,clean,config:,parallel:suppress-build-output," -- "$@")
 ec=$?
 if [[ $ec -eq 0 ]]; then
     eval set -- $OPTIONS
@@ -96,7 +100,9 @@ else
     fi
     build_exit 2
 fi
+
 CMAKE_BUILD_TYPE=Debug
+NUM_JOBS=$(( $(nproc) + 1 ))
 RUN_CLEAN='n'
 SUPRESS_OUT='n'
 while [ $# -gt 0 ]; do
@@ -107,6 +113,10 @@ while [ $# -gt 0 ]; do
         ;;
     (--clean)
         RUN_CLEAN='y'
+        ;;
+    (-j | --jobs)
+        NUM_JOBS=$2
+        shift
         ;;
     (-s | --suppress-build-output)
         SUPRESS_OUT='y'
@@ -149,7 +159,7 @@ build_generate() {
 }
 
 build_target() {
-    cmake --build build --target $TARGET
+    cmake --build build -t $TARGET -j $NUM_JOBS
 }
 export -f build_target
 
