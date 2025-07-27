@@ -1,8 +1,8 @@
 #include "app.h"
 
-int main(int argc, char** argv)
+int main()
 {
-    Hermes::Application app{};
-    app.Run();
-    return 0;
+	hermes::application app{};
+	app.Run();
+	return 0;
 }

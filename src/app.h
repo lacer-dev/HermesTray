@@ -2,20 +2,20 @@
 
 union SDL_Event;
 
-namespace Hermes
-{
+namespace hermes {
 
-class Application
+class application
 {
 public:
-    Application();
-    ~Application();
-    
-    void Run();
-    bool Running() const { return running; }
+	application();
+	~application();
+
+	void Run();
+	bool Running() const { return running; }
+
 private:
-    void Init();
-    bool running = false;
+	void init();
+	bool running = false;
 };
 
-}; // namespace Hermes
+}; // namespace hermes
