@@ -69,11 +69,19 @@ BraceWrapping:
 
 IncludeBlocks: Regroup
 IncludeCategories:
-  - Regex:  'pch.h'
-    Priority: -1
-    CaseSensitive: true
-  - Regex: '^<SDL3(_image)?/'
-    Priority: 2
-  - Regex: ".*"
-    Priority: 1
-    CaseSensitive: false
+  - Regex:          'pch.h'
+    CaseSensitive:  true
+    Priority:       -1
+    SortPriority:   -1
+  - Regex:          '^<SDL3(_image)?/'
+    CaseSensitive:  false
+    Priority:       3
+    SortPriority:   3
+  - Regex:          '<'
+    CaseSensitive:  false
+    Priority:       1
+    SortPriority:   1
+  - Regex:          ".*"
+    CaseSensitive:  false
+    Priority:       2
+    SortPriority:   2
