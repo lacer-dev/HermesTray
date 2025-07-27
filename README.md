@@ -1,7 +1,14 @@
-# HermesTray 0.1.1
+# HermesTray
 A systray utility for AFK grinding.
-## Features
+### Features
 * Toggle screensaver from system tray (automatically reenabled upon exit)
+## Supported Platforms
+* MSYS2 / MinGW
+## Dependencies
+With MSYS2:
+```
+sudo pacman -S mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-sdl3 mingw-w64-ucrt-x86_64-sdl3-image
+```
 ## Build
 ### Prerequisites:
 * CMake
@@ -9,6 +16,4 @@ A systray utility for AFK grinding.
 # in source root directory
 ./scripts/build.sh --config <config>
 ```
-Allowed values for \<config> are "build", "release", and "relwithdebinfo". Run `./scripts/build.sh --help` for additional build options.
-## Supported Platforms
-* Windows
+Allowed values for \<config> are "build", "release", "relwithdebinfo", and "minsizerel". Run `./scripts/build.sh --help` for additional build options.
