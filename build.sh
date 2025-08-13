@@ -2,11 +2,11 @@
 
 # line [begin-str]
 function draw-line {
-  local ch='─'
-  local text="${1//\*/${ch}}"
-  local line_len="$(($(tput cols) - ${#text} - 1))"
-  echo -ne "$text"
-  printf "${ch}%.0s" $(seq -s ' ' 0 "$line_len")
+  local CH='─'
+  local TEXT="${1//\*/${CH}}"
+  local LINE_LENGTH="$(($(tput cols) - ${#TEXT} - 1))"
+  echo -ne "$TEXT"
+  printf "${CH}%.0s" $(seq -s ' ' 0 "$LINE_LENGTH")
   echo
 }
 
@@ -20,16 +20,21 @@ function logerror {
 
 function get-build-type {
   case "${1,,}" in
-  (debug)
-    echo "Debug";;
-  (release)
-    echo "Release";;
-  (rwd|relwithdebinfo)
-    echo "RelWithDebInfo";;
-  (msr|minsizerel)
-    echo "MinSizeRel";;
-  (*) 
+  debug)
+    echo "Debug"
+    ;;
+  release)
+    echo "Release"
+    ;;
+  rwd | relwithdebinfo)
+    echo "RelWithDebInfo"
+    ;;
+  msr | minsizerel)
+    echo "MinSizeRel"
+    ;;
+  *)
     return 2
+    ;;
   esac
   return 0
 }
@@ -69,40 +74,40 @@ errc=$?
 [[ $errc -eq 0 ]] && eval set -- "$options" || exit 3
 while [ $# -gt 0 ]; do
   case $1 in
-  (-h|--help)
+  -h | --help)
     print-help
     exit 0
     ;;
-  (--clean)
+  --clean)
     target='clean'
     ;;
-  (-c|--config)
+  -c | --config)
     if ! cmake_build_type=$(get-build-type "$2"); then
-        logerror "unknown build configuration '$2'"
+      logerror "unknown build configuration '$2'"
     fi
     shift
     ;;
-  (--cmake-options)
+  --cmake-options)
     extra_cmake_flags="$2"
     shift
     ;;
-  (-j|--jobs)
+  -j | --jobs)
     num_jobs=$2
     shift
     ;;
-  (-o|--output-directory)
+  -o | --output-directory)
     build_output_directory=$(realpath "$2")
     shift
     ;;
-  (--)
+  --)
     shift
     break
     ;;
-  (-*)
+  -*)
     logerror "unrecognized option '$1'"
     exit 3
     ;;
-  (*)
+  *)
     break
     ;;
   esac
@@ -121,15 +126,13 @@ fi
 # run clean if '--clean' option is specified
 if [[ "$target" == clean ]]; then
   log "cleaning build directory..."
-  cmake --build build --target clean >/dev/null 2>&1
-  errc=$?
-  if [[ $errc -ne 0 ]]; then
+  if cmake --build build --target clean >/dev/null 2>&1; then
+    log "successfully cleaned build directory."
+    exit 0
+  else
     logerror "cleaning build directory failed."
     exit 3
-  else
-    log "successfully cleaned build directory."
   fi
-  exit 0
 fi
 
 # otherwise run cmake and build
@@ -146,11 +149,11 @@ cmake \
   ${extra_cmake_flags:+}
 errc=$?
 draw-line
-if [[ 0 -ne $errc ]]; then
+if [[ $errc -eq 0 ]]; then
+  log "successfully generated build files."
+else
   logerror "generating build files failed (with cmake exit code $errc)."
   exit 1
-else
-  log "successfully generated build files."
 fi
 
 log "building target '${target}'..."
