@@ -7,28 +7,23 @@ if(NOT CMAKE_BUILD_TYPE)
 elseif(NOT CMAKE_BUILD_TYPE MATCHES "Debug|Release|RelWithDebInfo|MinSizeRel")
     message(FATAL_ERROR "error: \"${CMAKE_BUILD_TYPE}\" is not a supported value for CMAKE_BUILD_TYPE.")
 endif()
-string(TOLOWER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_LOWERCASE)
-
-# output location
-if(NOT HERMES_OUTPUT_DIR)
-    set(HERMES_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE_LOWERCASE})
-endif()
 
 # dependencies
 find_package(SDL3 REQUIRED)
 find_package(SDL3_image REQUIRED)
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(HERMES_OUTPUT_DIR)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${HERMES_OUTPUT_DIR})
+endif()
 
 # variables
 set(TARGET hermes)
 set(SRC    ${CMAKE_SOURCE_DIR}/src)
 set(RES    ${CMAKE_SOURCE_DIR}/resources)
 set(VENDOR ${CMAKE_SOURCE_DIR}/vendor)
-set(BIN    ${HERMES_OUTPUT_DIR})
-set(PCH    ${SRC}/pch.h)
-
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BIN})
 
 # create executable
 add_executable(${TARGET} 
@@ -38,7 +33,7 @@ add_executable(${TARGET}
     $<$<PLATFORM_ID:Linux>:${SRC}/platform/unix/unix_sys.cpp>
 )
 target_link_libraries(${TARGET} SDL3::SDL3 SDL3_image::SDL3_image stdc++exp)
-target_precompile_headers(${TARGET} PRIVATE ${PCH})
+target_precompile_headers(${TARGET} PRIVATE ${SRC}/pch.h)
 target_include_directories(${TARGET} PRIVATE ${VENDOR}/nameof/include)
 
 # configuration
@@ -66,5 +61,5 @@ endif()
 # post-build: copy resources
 add_custom_command(TARGET ${TARGET} POST_BUILD
     COMMAND
-        ${CMAKE_COMMAND} -E create_symlink "${RES}/hermes32.png" "${BIN}/hermes32.png"
+        ${CMAKE_COMMAND} -E create_symlink "${RES}/hermes32.png" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/hermes32.png"
 )
