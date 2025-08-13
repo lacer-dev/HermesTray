@@ -32,9 +32,6 @@ namespace hermes {
 		bool can_sleep();
 		bool enable_sleep(bool perror = false);
 		bool disable_sleep(bool perror = false);
-		inline bool toggle_sleep() {
-			return can_sleep() ? disable_sleep() : enable_sleep();
-		}
 	} // namespace display
 
 	namespace meta {
