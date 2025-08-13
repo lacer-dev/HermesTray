@@ -22,8 +22,8 @@ find_package(SDL3_image REQUIRED)
 set(TARGET hermes)
 set(SRC    ${CMAKE_SOURCE_DIR}/src)
 set(RES    ${CMAKE_SOURCE_DIR}/resources)
-set(BIN    ${HERMES_OUTPUT_DIR})
 set(VENDOR ${CMAKE_SOURCE_DIR}/vendor)
+set(BIN    ${HERMES_OUTPUT_DIR})
 set(PCH    ${SRC}/pch.h)
 
 set(CMAKE_CXX_STANDARD 23)
@@ -34,8 +34,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BIN})
 add_executable(${TARGET} 
     ${SRC}/main.cpp
     ${SRC}/sys.cpp
-    $<$<PLATFORM_ID:Windows>:${SRC}/platform/windows/windows_sys.cpp>
-    $<$<PLATFORM_ID:Linux>:${SRC}/platform/posix/posix_sys.cpp>
+    $<$<PLATFORM_ID:Windows>:${SRC}/platform/win/win_sys.cpp>
+    $<$<PLATFORM_ID:Linux>:${SRC}/platform/unix/unix_sys.cpp>
 )
 target_link_libraries(${TARGET} SDL3::SDL3 SDL3_image::SDL3_image stdc++exp)
 target_precompile_headers(${TARGET} PRIVATE ${PCH})
@@ -50,7 +50,7 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug|RelWithDebInfo")
 endif()
 
 if(CMAKE_BUILD_TYPE MATCHES "Release|RelWithDebInfo|MinSizeRel")
-    add_compile_definitions(NDEBUG)
+    target_compile_definitions(${TARGET} PRIVATE NDEBUG)
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
