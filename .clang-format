@@ -1,46 +1,76 @@
 Language: Cpp
+Standard: Latest
+ColumnLimit: 120
 
-ColumnLimit: 0
-TabWidth: 4
-UseTab: Always
-AccessModifierOffset: -4
+# Alignment
+AlignAfterOpenBracket: AlwaysBreak
+AlignEscapedNewlines: LeftWithLastLine
 DerivePointerAlignment: false
 PointerAlignment: Left
-NamespaceIndentation: Inner
-ShortNamespaceLines: 1
-WrapNamespaceBodyWithEmptyLines: Always
-FixNamespaceComments: true
-# EnumTrailingComma: Remove
 
+# Initializers
+PackConstructorInitializers: Never
+# BinPackLongBracedList: true
 BinPackParameters: OnePerLine
+BinPackArguments: false
+Cpp11BracedListStyle: true
 
+# Access Modifier Lines
+EmptyLineAfterAccessModifier: Never
+EmptyLineBeforeAccessModifier: Never
+
+# Indentation
+AccessModifierOffset: -4
 BitFieldColonSpacing: Both
-
 ContinuationIndentWidth: 4
 IndentWidth: 4
-IndentAccessModifiers: false # See 'AccessModifierOffset'
+IndentAccessModifiers: false
 IndentCaseLabels: false
-IndentPPDirectives: None
+IndentPPDirectives: BeforeHash
 IndentRequiresClause: true
 IndentWrappedFunctionNames: true
+TabWidth: 4
+UseTab: Always
 
+# Namespaces
+AllowShortNamespacesOnASingleLine: true
+NamespaceIndentation: All
+ShortNamespaceLines: 1
+WrapNamespaceBodyWithEmptyLines: Never
+FixNamespaceComments: true
+
+# Allow
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortEnumsOnASingleLine: false
-# AllowShortFunctionsOnASingleLine: Inline
+AllowShortFunctionsOnASingleLine: InlineOnly
 AllowShortIfStatementsOnASingleLine: Never
 
-SpacesInParens: Never
-SpacesInSquareBrackets: false
-SpaceBeforeInheritanceColon: true
-SpaceBeforeCtorInitializerColon: true
-SpaceBeforeCaseColon: false
-SpaceBeforeAssignmentOperators: true
-SpaceAfterTemplateKeyword: false
-SpaceAfterLogicalNot: false
-SpaceAfterCStyleCast: false
+# Braces
+InsertBraces: false
 
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: false
+  AfterControlStatement: Never
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+  BeforeCatch: false
+  BeforeElse: false
+  BeforeLambdaBody: false
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+  
+# Breaks
 BreakAdjacentStringLiterals: true
 BreakAfterAttributes: Always
-BreakBeforeBraces: Custom # See 'BraceWrapping'
+BreakBeforeBraces: Custom
 BreakBeforeConceptDeclarations: Always
 # BreakBeforeTemplateCloser: false
 BreakBeforeTernaryOperators: true
@@ -48,25 +78,29 @@ BreakConstructorInitializers: BeforeColon
 BreakFunctionDefinitionParameters: false
 BreakTemplateDeclarations: Yes
 
-InsertBraces: false
-BraceWrapping:
-  AfterCaseLabel: false
-  AfterClass: true
-  AfterControlStatement: Always
-  AfterEnum: true
-  AfterFunction: true
-  AfterNamespace: false
-  AfterStruct: true
-  AfterUnion: true
-  BeforeCatch: true
-  BeforeElse: true
-  BeforeLambdaBody: false
-  BeforeWhile: true
-  IndentBraces: false
-  SplitEmptyFunction: false
-  SplitEmptyRecord: false
-  SplitEmptyNamespace: false
+# Macros
+AlignConsecutiveMacros: Consecutive
+SkipMacroDefinitionBody: true
 
+# Spaces
+SpaceAfterCStyleCast: false
+# SpaceAfterOperatorKeyword: false
+SpaceAfterTemplateKeyword: false
+SpaceAfterLogicalNot: false
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets: false
+SpaceBeforeInheritanceColon: true
+SpaceBeforeCpp11BracedList: true
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeCaseColon: false
+SpaceBeforeAssignmentOperators: true
+SpaceInEmptyBlock: false
+SpacesInParens: Never
+SpacesInAngles: Never
+SpacesInSquareBrackets: false
+SpacesInContainerLiterals: true
+
+# Sorting Includes
 IncludeBlocks: Regroup
 IncludeCategories:
   - Regex:          '(.*/)?pch.h'
@@ -77,7 +111,11 @@ IncludeCategories:
     CaseSensitive:  false
     Priority:       3
     SortPriority:   3
-  - Regex:          '<'
+  - Regex:          '^<nameof/'
+    CaseSensitive:  false
+    Priority:       3
+    SortPriority:   4
+  - Regex:          '^<'
     CaseSensitive:  false
     Priority:       1
     SortPriority:   1
