@@ -158,7 +158,7 @@ void Hermes::_set_metadata() {
 	meta::set_copyright("Copyright (c) 2025 Leon Allotey");
 	meta::set_url("https://github.com/lacer-dev/HermesTray");
 	meta::set_type(meta::APPLICATION);
-	dbgdo("done");
+	dbgprintln("done");
 }
 
 void Hermes::_callback_toggle_sleep(TrayEntry& entry) {
