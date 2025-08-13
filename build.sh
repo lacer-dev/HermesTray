@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
 
-SLC=$(printf '\e[38;5;73m%s\e[m' "$(basename $0):")
-ELC=$(printf '%s \e[38;5;1m%s\e[m' "${SLC}" 'error:')
-
 # line [begin-str]
-draw-line() {
+function draw-line {
   local ch='─'
   local text="${1//\*/${ch}}"
   local line_len="$(($(tput cols) - ${#text} - 1))"
@@ -13,74 +10,88 @@ draw-line() {
   echo
 }
 
-get-build-type() {
+function log {
+  echo "$(echo -ne "\e[38;5;73m$(basename "$0"):\e[m") $*"
+}
+
+function logerror {
+  log "$(echo -ne '\e[38;5;1merror:\e[m') $*" >&2
+}
+
+function get-build-type {
   case "${1,,}" in
-  (debug | deb)
-    printf "Debug" ;;
-  (release | rel)
-    printf "Release" ;;
-  (rwd | relwithdebinfo)
-    printf "RelWithDebInfo" ;;
-  (msr | minsizerel)
-    printf "MinSizeRel" ;;
+  (debug)
+    echo "Debug";;
+  (release)
+    echo "Release";;
+  (rwd|relwithdebinfo)
+    echo "RelWithDebInfo";;
+  (msr|minsizerel)
+    echo "MinSizeRel";;
   (*) 
-    if [[ $? -ne 0 ]]; then
-      echo "${ELC} unknown build configuration '$2'" >&2
-      exit 2
-    fi
+    return 2
   esac
   return 0
 }
 
-print-help() {
-  echo "Usage: $(basename $0) [options]"
+function print-help {
+  echo "Usage: $(basename "$0") [options]"
   echo
   echo "Options:"
-  echo "      --clean                Cleans the build directory."
-  echo "  -c, --config <config>      Specifies the build configuration. Allowed values are"
-  echo "                              (case-insensitively) 'debug|deb', 'release|rel',"
-  echo "                              'relwithdebinfo|rwd', and 'minsizerel|msr'. If not"
-  echo "                              specified, the default value is 'debug'"
-  echo "  -j, --parallel <jobs>      Builds in parallel with <jobs> number of jobs. If not"
-  echo "                              specified, the default value is nproc + 1."
+  echo "      --clean                 Cleans the build directory."
+  echo "  -c, --config={debug|release|relwithdebinfo|rwd|minsizerel|msr}"
+  echo "                              Specifies the build configuration. If not specified, the default value is 'debug'"
+  echo "  -j, --parallel=<jobs>       Builds in parallel with <jobs> number of jobs. If not"
+  echo "                               specified, the default value is nproc + 1."
   echo "      --cmake-options <options>"
-  echo "                             Passes <options> to CMake before generating build files."
-  echo "  -h, --print-help                 Display this message and exit."
+  echo "                              Passes <options> to CMake before generating build files."
+  echo "  -o, --output-directory <dir>"
+  echo "                              Specifies the output directory for the build output."
+  echo "                               If not specified, the default directory is 'bin/<config>'"
+  echo "  -h, --help            Display this message and exit."
   echo
   echo "Exit Codes:"
   echo "  0 if build was successful,"
-  echo "  1 if there was an error while building,"
-  echo "  2 if there was an error otherwise."
+  echo "  1 if there was an error while generating build files,"
+  echo "  2 if there was an error while building, or"
+  echo "  3 if there was an error otherwise."
 }
 
 ##################################################################################################################
 # parse command-line options
-OPTIONS=$(getopt -a -o "hc:j:s" -l "help,clean,config:,parallel:,cmake-options:" -- "$@")
-[[ $? -eq 0 ]] && eval set -- $OPTIONS || exit 2
-
-CMAKE_BUILD_TYPE=Debug
-EXTRA_CMAKE_FLAGS=
-NUM_JOBS=$(($(nproc) + 1))
-TARGET="hermes"
+declare build_output_directory
+declare extra_cmake_flags
+cmake_build_type=Debug
+num_jobs=$(($(nproc) + 1))
+target="hermes"
+options=$(getopt -a -o "hc:j:o:" -l "help,clean,config:,parallel:,cmake-options,output-directory:" -- "$@")
+errc=$?
+[[ $errc -eq 0 ]] && eval set -- "$options" || exit 3
 while [ $# -gt 0 ]; do
   case $1 in
-  (-h | --help)
+  (-h|--help)
     print-help
     exit 0
     ;;
   (--clean)
-    TARGET='clean'
+    target='clean'
     ;;
-  (-j | --jobs)
-    NUM_JOBS=$2
-    shift
-    ;;
-  (-c | --config)
-    CMAKE_BUILD_TYPE=$(get-build-type $2)
+  (-c|--config)
+    if ! cmake_build_type=$(get-build-type "$2"); then
+        logerror "unknown build configuration '$2'"
+    fi
     shift
     ;;
   (--cmake-options)
-    EXTRA_CMAKE_FLAGS="$2"
+    extra_cmake_flags="$2"
+    shift
+    ;;
+  (-j|--jobs)
+    num_jobs=$2
+    shift
+    ;;
+  (-o|--output-directory)
+    build_output_directory=$(realpath "$2")
     shift
     ;;
   (--)
@@ -88,8 +99,8 @@ while [ $# -gt 0 ]; do
     break
     ;;
   (-*)
-    echo "${ELC} unrecognized option '$1'" >&2
-    exit 2
+    logerror "unrecognized option '$1'"
+    exit 3
     ;;
   (*)
     break
@@ -100,32 +111,29 @@ done
 # there should be no more arguments
 if [ $# -ne 0 ]; then
   for arg in "$@"; do
-    echo "${ELC} invalid argument '$arg'." >&2
+    logerror "invalid argument '$arg'."
   done
-  exit 2
+  exit 3
 fi
 
 ##################################################################################################################
 
 # run clean if '--clean' option is specified
-
-if [[ "$TARGET" == clean ]]; then
-  echo "${SLC} cleaning build directory..."
+if [[ "$target" == clean ]]; then
+  log "cleaning build directory..."
   cmake --build build --target clean >/dev/null 2>&1
   errc=$?
   if [[ $errc -ne 0 ]]; then
-    echo "${ELC} cleaning build directory failed." >&2
-    exit 1
+    logerror "cleaning build directory failed."
+    exit 3
   else
-    echo "${SLC} successfully cleaned build directory."
+    log "successfully cleaned build directory."
   fi
   exit 0
 fi
 
 # otherwise run cmake and build
-
-echo "${SLC} running build script for '${CMAKE_BUILD_TYPE,,}'..."
-echo "${SLC} generating build files..."
+log "generating build files for '${cmake_build_type,,}'..."
 draw-line '*CMake'
 mkdir -p build
 cmake \
@@ -133,31 +141,32 @@ cmake \
   -B build \
   -G "Unix Makefiles" \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-  -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE \
-  $EXTRA_CMAKE_FLAGS
+  -DCMAKE_BUILD_TYPE="$cmake_build_type" \
+  -DHERMES_OUTPUT_DIR="${build_output_directory:-"$PWD/bin/${cmake_build_type,,}"}" \
+  ${extra_cmake_flags:+}
 errc=$?
 draw-line
 if [[ 0 -ne $errc ]]; then
-  echo "${ELC} generating build files failed (with cmake exit code $errc)." >&2
-  exit 2
+  logerror "generating build files failed (with cmake exit code $errc)."
+  exit 1
 else
-  echo "${SLC} successfully generated build files."
+  log "successfully generated build files."
 fi
 
-echo "${SLC} building target '${TARGET}'..."
+log "building target '${target}'..."
 draw-line '*Build'
 cmake \
   --build build \
-  -t "${TARGET}" \
-  -j "$NUM_JOBS"
+  -t "${target}" \
+  -j "$num_jobs"
 errc=$?
 draw-line
 
 if [[ 0 -ne $errc ]]; then
-  echo "${ELC} build failed (with cmake exit code $errc)." >&2
-  exit 1
+  logerror "build failed (with cmake exit code $errc)."
+  exit 2
 else
-  echo "${SLC} successfully built target '${TARGET}'."
+  log "successfully built target '${target}'."
   exit 0
 fi
 ##################################################
