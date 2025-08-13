@@ -3,69 +3,57 @@
 #include "Window.h"
 
 namespace hermes {
-
-WindowProperties::WindowProperties() : _id{SDL_CreateProperties()} {}
-
-WindowProperties::~WindowProperties() { SDL_DestroyProperties(ID()); }
-
-WindowProperties::WindowProperties(const std::string& title,
-								   const int width,
-								   const int height)
-	: WindowProperties{}
-{
-	SetTitle(title);
-	SetWidth(width);
-	SetHeight(height);
-}
-
-WindowProperties::WindowProperties(WindowProperties&& other) noexcept
-	: _id{std::exchange(other._id, 0)}
-{}
-
-WindowProperties& WindowProperties::operator=(WindowProperties&& other) noexcept
-{
-	if (this != &other)
-	{
-		SDL_DestroyProperties(this->ID());
-		this->_id = std::exchange(other._id, 0);
+	Window::Properties::Properties()
+		: m_id {SDL_CreateProperties()} {
 	}
 
-	return *this;
-}
+	Window::Properties::~Properties() {
+		SDL_DestroyProperties(get_id());
+	}
 
-WindowProperties& WindowProperties::SetTitle(const std::string& title)
-{
-	SDL_SetStringProperty(ID(), SDL_PROP_WINDOW_CREATE_TITLE_STRING,
-						  title.c_str());
-	return *this;
-}
+	Window::Properties::Properties(const std::string& title, const int width, const int height)
+		: Window::Properties {} {
+		set_title(title);
+		set_width(width);
+		set_height(height);
+	}
 
-WindowProperties& WindowProperties::SetSize(const int width, const int height)
-{
-	SetWidth(width);
-	SetHeight(height);
-	return *this;
-}
+	Window::Properties::Properties(Window::Properties&& other) noexcept
+		: m_id {std::exchange(other.m_id, 0)} {
+	}
 
-WindowProperties& WindowProperties::SetWidth(const int width)
-{
-	SDL_SetNumberProperty(ID(), SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, width);
-	return *this;
-}
+	Window::Properties& Window::Properties::operator=(Window::Properties&& other) noexcept {
+		this->m_id = std::exchange(other.m_id, 0);
+		return *this;
+	}
 
-WindowProperties& WindowProperties::SetHeight(const int height)
-{
-	SDL_SetNumberProperty(ID(), SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, height);
-	return *this;
-}
+	Window::Properties& Window::Properties::set_title(const std::string& title) {
+		SDL_SetStringProperty(get_id(), SDL_PROP_WINDOW_CREATE_TITLE_STRING, title.c_str());
+		return *this;
+	}
 
-////////////////////////////// Window //////////////////////////////
+	Window::Properties& Window::Properties::set_size(const int width, const int height) {
+		return set_width(width), set_height(height);
+	}
 
-Window::Window(WindowProperties&& properties)
-	: _properties{std::move(properties)},
-	  _handle{SDL_CreateWindowWithProperties(_properties.ID())}
-{}
+	Window::Properties& Window::Properties::set_width(const int width) {
+		SDL_SetNumberProperty(get_id(), SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, width);
+		return *this;
+	}
 
-Window::~Window() { SDL_DestroyWindow(Handle()); }
+	Window::Properties& Window::Properties::set_height(const int height) {
+		SDL_SetNumberProperty(get_id(), SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, height);
+		return *this;
+	}
 
+	////////////////////////////// Window //////////////////////////////
+
+	Window::Window(Window::Properties&& properties)
+		: m_properties {std::move(properties)},
+		  m_handle {SDL_CreateWindowWithProperties(m_properties.get_id())} {
+	}
+
+	Window::~Window() {
+		SDL_DestroyWindow(m_handle);
+	}
 } // namespace hermes

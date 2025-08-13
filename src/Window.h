@@ -4,47 +4,35 @@
 struct SDL_Window;
 
 namespace hermes {
+	class Window {
+	public:
+		class Properties {
+		public:
+			using id_type = unsigned;
 
-class WindowProperties
-{
-	using Self = WindowProperties;
+			Properties();
+			Properties(const std::string& title, int width, int height);
 
-public:
-	using id_type = unsigned;
+			~Properties();
+			Properties(const Properties&) = delete;
+			Properties(Properties&& other) noexcept;
+			Properties& operator=(const Properties&) = delete;
+			Properties& operator=(Properties&& other) noexcept;
 
-	WindowProperties();
-	WindowProperties(const std::string& title, int width, int height);
+			id_type get_id() const { return m_id; }
 
-	~WindowProperties();
-	WindowProperties(const WindowProperties&) = delete;
-	WindowProperties(WindowProperties&& other) noexcept;
-	WindowProperties& operator=(const WindowProperties&) = delete;
-	WindowProperties& operator=(WindowProperties&& other) noexcept;
+			Properties& set_title(const std::string& title);
+			Properties& set_size(int width, int height);
+			Properties& set_width(int width);
+			Properties& set_height(int height);
+		private:
+			id_type m_id;
+		};
 
-	id_type ID() const { return _id; }
-
-	Self& SetTitle(const std::string& title);
-	Self& SetSize(int width, int height);
-	Self& SetWidth(int width);
-	Self& SetHeight(int height);
-
-private:
-	id_type _id;
-};
-
-class Window
-{
-public:
-	using handle_type = SDL_Window;
-
-	explicit Window(WindowProperties&& properties);
-	~Window();
-
-	handle_type* Handle() const { return _handle; }
-
-private:
-	WindowProperties _properties;
-	handle_type* _handle;
-};
-
+		explicit Window(Properties&& properties);
+		~Window();
+	private:
+		Properties m_properties;
+		SDL_Window* m_handle;
+	};
 } // namespace hermes
