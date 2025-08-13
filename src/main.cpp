@@ -112,7 +112,7 @@ void Hermes::run() {
 	dbgprintln("done");
 
 	// main loop
-	dbgprintln("main_loop: running");
+	dbgprintln("running main loop... running");
 	bool running = true;
 	while (running) {
 		SDL_Event curr_event;
@@ -124,7 +124,7 @@ void Hermes::run() {
 
 		SDL_Delay(1000 / 10);
 	}
-	dbgprintln("main_loop: ended");
+	dbgprintln("ending main loop... ended");
 
 	// reenable sleep when app closes
 	display::enable_sleep(true);
@@ -162,7 +162,9 @@ void Hermes::_set_metadata() {
 }
 
 void Hermes::_callback_toggle_sleep(TrayEntry& entry) {
-	if (auto result = display::toggle_sleep(); !result) {
+	using namespace display;
+	
+	if (!(can_sleep() ? disable_sleep() : enable_sleep())) {
 		entry.toggle_checked();
 		show_error_messagebox("could not toggle sleep");
 	}
@@ -171,11 +173,15 @@ void Hermes::_callback_toggle_sleep(TrayEntry& entry) {
 }
 
 void Hermes::_callback_quit(TrayEntry&) {
-	if (SDL_Event event {SDL_EVENT_QUIT}; !SDL_PushEvent(&event)) {
+	dbgprint("sending quit event... ");
+	SDL_Event event {SDL_EVENT_QUIT};
+	if (!SDL_PushEvent(&event)) {
+		dbgprintln("failed");
 		logerror("failed to quit properly");
 		lognote("sdl: {}", SDL_GetError());
 		show_error_messagebox("quit failed");
 	}
+	dbgprintln("done");
 }
 
 void Hermes::_callback_about(TrayEntry&) {
