@@ -94,14 +94,11 @@ Hermes::~Hermes() {
 }
 
 void Hermes::run() {
-	// disable sleep when app starts
-	display::disable_sleep(true);
-
 	// create systray/notification area data
 	dbgprint("creating systray icon... ");
 	TrayObject tray {m_image_loader.get(s_TRAY_ICON_ID), "Hermes"};
 	dbgprintln("done");
-
+	
 	dbgprint("creating systray menu... ");
 	TrayMenu menu = tray.new_menu();
 	menu.add_label("Quit").set_callback(_callback_quit);
@@ -110,7 +107,10 @@ void Hermes::run() {
 	menu.add_separator();
 	menu.add_label("About Hermes").set_callback(_callback_about);
 	dbgprintln("done");
-
+	
+	// disable sleep when app starts
+	display::disable_sleep(true);
+	
 	// main loop
 	dbgprintln("running main loop... running");
 	bool running = true;
