@@ -56,7 +56,6 @@ namespace hermes {
 			if (!dbgvalidate(SDL_DisableScreenSaver(), "off\n")) {
 				fatal_error("Failed to disable screensaver: SDL: {}", SDL_GetError());
 			}
-			dbg("off");
 		}
 
 		bool can_sleep() {

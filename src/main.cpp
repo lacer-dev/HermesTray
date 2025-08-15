@@ -94,7 +94,7 @@ Hermes::~Hermes() {
 void Hermes::run() {
 	// create systray/notification area data
 	
-	TrayObject tray {m_image_loader.get(s_TRAY_ICON_ID), "Hermes"};dbg(" done\n");
+	TrayObject tray {m_image_loader.get(s_TRAY_ICON_ID), "Hermes"};
 	TrayMenu menu = tray.new_menu();
 	menu.add_label("Quit").set_callback(_callback_quit);
 	menu.add_separator();
