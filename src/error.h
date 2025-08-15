@@ -1,5 +1,6 @@
 #pragma once
 #include <cassert>
+#include <exception>
 #include <format>
 #include <print>
 #include <source_location>
@@ -28,20 +29,14 @@ inline void eprintln() {
 
 namespace hermes {
 	enum class logl {
-		fatal,
 		error,
 		warning,
-		note,
 	};
 
 	inline const std::string_view to_string(logl level) {
 		switch (level) {
-		case logl::fatal:
-			return "\033[38;5;m160fatal error\033[m";
 		case logl::error:
 			return "\033[38;5;1merror\033[m";
-		case logl::note:
-			return "\033[38;5;14mnote\033[m";
 		case logl::warning:
 			return "\033[38;5;227mwarning\033[m";
 		default:
@@ -66,8 +61,10 @@ namespace hermes {
 	}
 
 	template<class... Args>
-	inline void lognote(std::format_string<Args...> fmt, Args&&... args) {
-		log(logl::note, fmt, std::forward<Args>(args)...);
+	[[noreturn]]
+	inline void fatal_error(std::format_string<Args...> fmt, Args&&... args) {
+		eprintln("\033[38;5;160mfatal error\033[m: {}", std::format(fmt, std::forward<Args>(args)...));
+		std::terminate();
 	}
 
 	inline void
@@ -79,21 +76,37 @@ namespace hermes {
 			_location.column(),
 			_location.function_name(),
 			_message);
-		std::abort();
+		std::terminate();
+	}
+
+	inline bool _validate_condition(
+		bool condition,
+		[[maybe_unused]] std::string success_message = " done\n",
+		[[maybe_unused]] std::string fail_message = " failed\n") {
+#ifndef NDEBUG
+		if (condition) {
+			if (!success_message.empty()) {
+				eprint("{}", success_message);
+			}
+		} else {
+			if (!fail_message.empty()) {
+				eprint("{}", fail_message);
+			}
+		}
+#endif
+		return condition;
 	}
 }; // namespace hermes
 
 // Debug macros
 #ifndef NDEBUG
 	#define dbgdo(...)	 	do { __VA_ARGS__; } while (0)
-	#define dbgprint(...) 	do { eprint(__VA_ARGS__); } while (0)
-	#define dbgprintln(...) do { eprintln(__VA_ARGS__); } while (0)
-	#define dbglog(...)	 	do { ::hermes::log(__VA_ARGS__); } while (0)
+	#define dbg(...) do { eprint(__VA_ARGS__); } while (0)
 	#define dbgassert(...)	do { if (!(__VA_ARGS__)) ::hermes::_force_assert(#__VA_ARGS__); } while (0)
+	#define dbgvalidate(...) ::hermes::_validate_condition(__VA_ARGS__)
 #else
 	#define dbgdo(...)		((void)0)
-	#define dbgprint(...) 	((void)0)
-	#define dbgprintln(...)	((void)0)
-	#define dbglog(...)		((void)0)
+	#define dbg(...) 	((void)0)
 	#define dbgassert(...)	((void)0)
+	#define dbgvalidate(...) ::hermes::_validate_condition(__VA_ARGS__)
 #endif

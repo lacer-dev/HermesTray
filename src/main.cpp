@@ -28,7 +28,7 @@ namespace {
 	}
 
 	void show_error_messagebox(const std::string& message) {
-		std::string title = this_proc::name() + " - Error";
+		std::string title = this_process::name() + " - Error";
 		static const int button_flags =
 			SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT | SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
 		std::vector<SDL_MessageBoxButtonData> buttons {{button_flags, 1, "ok"}};
@@ -71,12 +71,10 @@ private:
 bool Hermes::s_active = false;
 
 Hermes::Hermes() {
-	dbgprintln("querying sdl version... {}.{}.{}", SDL_MAJOR_VERSION, SDL_MICRO_VERSION, SDL_MINOR_VERSION);
+	dbg("Querying SDL version{}.{}.{}\n", SDL_MAJOR_VERSION, SDL_MICRO_VERSION, SDL_MINOR_VERSION);
 	_set_metadata();
 
-	if (!hermes::initialize()) {
-		logerror("could not initialize hermes");
-	}
+	hermes::global_init();
 
 	std::atexit(_restore_global_state);
 	_load_resources();
@@ -86,33 +84,29 @@ Hermes::Hermes() {
 
 Hermes::~Hermes() {
 	// unload resources
-	dbgprint("unloading resources... ");
+	dbg("Unloading resources");
 	m_image_loader.unload_all();
-	dbgprintln("done");
+	dbg(" done\n");
 
 	_restore_global_state();
 }
 
 void Hermes::run() {
 	// create systray/notification area data
-	dbgprint("creating systray icon... ");
-	TrayObject tray {m_image_loader.get(s_TRAY_ICON_ID), "Hermes"};
-	dbgprintln("done");
 	
-	dbgprint("creating systray menu... ");
+	TrayObject tray {m_image_loader.get(s_TRAY_ICON_ID), "Hermes"};dbg(" done\n");
 	TrayMenu menu = tray.new_menu();
 	menu.add_label("Quit").set_callback(_callback_quit);
 	menu.add_separator();
 	menu.add_checkbox("Disable Sleep", !display::can_sleep()).set_callback(_callback_toggle_sleep);
 	menu.add_separator();
 	menu.add_label("About Hermes").set_callback(_callback_about);
-	dbgprintln("done");
 	
 	// disable sleep when app starts
-	display::disable_sleep(true);
+	display::disable_sleep();
 	
 	// main loop
-	dbgprintln("running main loop... running");
+	dbg("Running main loop\n");
 	bool running = true;
 	while (running) {
 		SDL_Event curr_event;
@@ -124,10 +118,10 @@ void Hermes::run() {
 
 		SDL_Delay(1000 / 10);
 	}
-	dbgprintln("ending main loop... ended");
+	dbg("Ending main loop\n");
 
 	// reenable sleep when app closes
-	display::enable_sleep(true);
+	display::enable_sleep();
 }
 
 void Hermes::_exit(int code) {
@@ -137,63 +131,53 @@ void Hermes::_exit(int code) {
 
 void Hermes::_load_resources() {
 	// load systray icon
-	static const std::filesystem::path ICON_PATH = this_proc::dir() / "hermes32.png";
-	dbgprint("loading resources... ");
+	static const std::filesystem::path ICON_PATH = this_process::dir() / "hermes32.png";
+	dbg("Loading resources");
 	m_image_loader.load(s_TRAY_ICON_ID, ICON_PATH);
-	dbgprintln("done");
+	dbg(" done\n");
 }
 
 void Hermes::_restore_global_state() {
 	if (s_active) {
-		hermes::quit();
+		hermes::global_shutdown();
 		s_active = false;
 	}
 }
 
 void Hermes::_set_metadata() {
-	dbgprint("initializing app metadata... ");
+	dbg("Initializing app metadata");
 	meta::set_name("HermesTray");
 	meta::set_version("0.1.1");
 	meta::set_creator("Leon Allotey");
 	meta::set_copyright("Copyright (c) 2025 Leon Allotey");
 	meta::set_url("https://github.com/lacer-dev/HermesTray");
 	meta::set_type(meta::APPLICATION);
-	dbgprintln("done");
+	dbg(" done\n");
 }
 
 void Hermes::_callback_toggle_sleep(TrayEntry& entry) {
 	using namespace display;
-	
-	if (!(can_sleep() ? disable_sleep() : enable_sleep())) {
-		entry.toggle_checked();
-		show_error_messagebox("could not toggle sleep");
-	}
-
+	dbg("Toggling screensaver:\n ");
+	can_sleep() ? disable_sleep() : enable_sleep();
 	dbgassert(entry.is_checked() == !display::can_sleep());
 }
 
 void Hermes::_callback_quit(TrayEntry&) {
-	dbgprint("sending quit event... ");
+	dbg("Sending quit event...");
 	SDL_Event event {SDL_EVENT_QUIT};
-	if (!SDL_PushEvent(&event)) {
-		dbgprintln("failed");
-		logerror("failed to quit properly");
-		lognote("sdl: {}", SDL_GetError());
+	if (!dbgvalidate(SDL_PushEvent(&event))) {
+		logerror("Failed to quit properly: SDL: {}", SDL_GetError());
 		show_error_messagebox("quit failed");
 	}
-	dbgprintln("done");
 }
 
 void Hermes::_callback_about(TrayEntry&) {
-	dbgprint("opening url \"{}\"... ", meta::get_url());
-	if (!SDL_OpenURL(meta::get_url().c_str())) {
-		dbgprintln("failed");
-		logerror("could not open url \"{}\"", meta::get_url());
-		lognote("sdl: {}", SDL_GetError());
+	dbg("Opening url \"{}\"", meta::get_url());
+	if (!dbgvalidate(SDL_OpenURL(meta::get_url().c_str()))) {
+		logerror("Failed opening url \"{}\": SDL: {}", meta::get_url(), SDL_GetError());
 		show_error_messagebox("could not open url");
 		return;
 	}
-	dbgprintln("done");
 }
 
 int main() {

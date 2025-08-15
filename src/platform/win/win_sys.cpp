@@ -13,9 +13,9 @@
 #include "../../sys.h"
 
 namespace hermes {
-	namespace this_proc {
+	namespace this_process {
 		namespace {
-			std::filesystem::path _path_to_this_process() {
+			std::filesystem::path _path_to_this_processess() {
 				std::array<char, MAX_PATH> buffer;
 				if (!GetModuleFileNameA(nullptr, buffer.data(), MAX_PATH)) {
 					throw std::system_error(
@@ -26,8 +26,8 @@ namespace hermes {
 		} // namespace
 
 		const std::filesystem::path& path() {
-			static std::filesystem::path process_path = _path_to_this_process();
+			static std::filesystem::path process_path = _path_to_this_processess();
 			return process_path;
 		}
-	} // namespace this_proc
+	} // namespace this_process
 } // namespace hermes

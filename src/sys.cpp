@@ -2,6 +2,7 @@
 
 #include "sys.h"
 
+#include <exception>
 #include <functional>
 #include <memory>
 #include <stdexcept>
@@ -18,74 +19,44 @@
 namespace hermes {
 	namespace {
 		bool _init_sdl_subsystem(int subsystem_flag, std::string subsystem_name) {
-			dbgprint("initializing sdl {}... ", subsystem_name);
+			dbg("Initializing SDL {}... ", subsystem_name);
 			dbgdo(thread_local_timer::start());
 
-			if (!SDL_InitSubSystem(subsystem_flag)) {
-				dbgprintln("failed");
-				logerror("could not initialize sdl {} subsystem", subsystem_name);
-				lognote("sdl: {}", SDL_GetError());
+			if (!dbgvalidate(SDL_InitSubSystem(subsystem_flag), "")) {
+				fatal_error("Failed to initialize SDL {} subsystem: SDL: {}", subsystem_name, SDL_GetError());
 				return false;
 			}
-
-			dbgprintln("done ({}s)", thread_local_timer::stop());
+			
+			dbg(" done ({}s)\n", thread_local_timer::stop());
 			return true;
 		}
 	} // namespace
 
-	bool initialize() {
-		static bool called = false;
-		if (!called) {
-			called = true;
-
-			if (!_init_sdl_subsystem(SDL_INIT_EVENTS, "events")) {
-				return false;
-			}
-			if (!_init_sdl_subsystem(SDL_INIT_VIDEO, "video")) {
-				return false;
-			}
-
-			return true;
-		}
-
-		throw std::invalid_argument("initializing hermes more than once is prohibited");
+	void global_init() {
+		_init_sdl_subsystem(SDL_INIT_EVENTS, "events");
+		_init_sdl_subsystem(SDL_INIT_VIDEO, "video");
 	}
 
-	void quit() {
-		dbgprint("quitting sdl... ");
+	void global_shutdown() {
+		dbg("quitting sdl... ");
 		SDL_Quit();
-		dbgprintln("done\n");
+		dbg(" done\n");
 	}
 
 	namespace display {
-		bool enable_sleep(bool perror) {
-			dbgprint("enabling sleep... ");
-
-			if (!SDL_EnableScreenSaver()) {
-				if (perror) {
-					logerror("failed to enable screensaver");
-					lognote("sdl: {}", SDL_GetError());
-				}
-				return false;
+		void enable_sleep() {
+			dbg("Enabling screensaver... ");
+			if (!dbgvalidate(SDL_EnableScreenSaver(), "on\n")) {
+				fatal_error("Failed to enable screensaver: SDL: {}", SDL_GetError());
 			}
-
-			dbgprintln("on");
-			return true;
 		}
 
-		bool disable_sleep(bool perror) {
-			dbgprint("disabling sleep... ");
-
-			if (!SDL_DisableScreenSaver()) {
-				if (perror) {
-					logerror("failed to disable screensaver");
-					lognote("sdl: {}", SDL_GetError());
-				}
-				return false;
+		void disable_sleep() {
+			dbg("Disabling screensaver... ");
+			if (!dbgvalidate(SDL_DisableScreenSaver(), "off\n")) {
+				fatal_error("Failed to disable screensaver: SDL: {}", SDL_GetError());
 			}
-
-			dbgprintln("off");
-			return true;
+			dbg("off");
 		}
 
 		bool can_sleep() {
@@ -205,9 +176,10 @@ namespace hermes {
 	}
 
 	SDL_Tray* _new_tray_handle(SDL_Surface* image, const char* tooltip) {
+		dbg("Creating systray icon...");
 		SDL_Tray* handle = SDL_CreateTray(image, tooltip);
-		if (!handle) {
-			throw std::range_error("could not create tray object");
+		if (!dbgvalidate(handle)) {
+			fatal_error("Failed to create a systray icon: SDL: {}", SDL_GetError());
 		}
 		return handle;
 	}
@@ -221,9 +193,10 @@ namespace hermes {
 	}
 
 	TrayMenu TrayObject::new_menu() {
+		dbg("Creating systray menu...");
 		SDL_TrayMenu* menu_handle = SDL_CreateTrayMenu(m_handle);
-		if (!menu_handle) {
-			throw std::range_error("could not create tray menu");
+		if (!dbgvalidate(menu_handle)) {
+			fatal_error("Failed to create a systray menu: SDL: {}", SDL_GetError());
 		}
 		return TrayMenu {menu_handle};
 	}

@@ -15,10 +15,10 @@ struct SDL_TrayMenu;
 struct SDL_Surface;
 
 namespace hermes {
-	bool initialize();
-	void quit();
-
-	namespace this_proc {
+	void global_init();
+	void global_shutdown();
+	
+	namespace this_process {
 		const std::filesystem::path& path();
 		inline std::filesystem::path dir() {
 			return path().parent_path();
@@ -26,12 +26,12 @@ namespace hermes {
 		inline std::string name() {
 			return path().filename().string();
 		}
-	} // namespace this_proc
+	} // namespace this_process
 
 	namespace display {
 		bool can_sleep();
-		bool enable_sleep(bool perror = false);
-		bool disable_sleep(bool perror = false);
+		void enable_sleep();
+		void disable_sleep();
 	} // namespace display
 
 	namespace meta {
