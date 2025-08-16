@@ -11,7 +11,7 @@ function draw-line {
 }
 
 function log {
-  echo "$(echo -ne "\e[38;5;73m$(basename "$0"):\e[m") $*"
+  echo "$(echo -ne "\e[38;5;4m$(basename "$0"):\e[m") $*"
 }
 
 function logerror {
