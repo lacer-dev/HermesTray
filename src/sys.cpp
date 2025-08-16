@@ -69,7 +69,7 @@ namespace hermes {
 				const std::string_view property_name,
 				const char*			   sdl_property_id,
 				const std::string&	   value) {
-				eprint("Setting metadata property '{}'...", property_name);
+				dbg("Setting metadata property '{}'...", property_name);
 				bool success = SDL_SetAppMetadataProperty(sdl_property_id, value.c_str());
 				if (!dbg_validate(success)) {
 					std::string error_message =
