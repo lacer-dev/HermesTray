@@ -1,10 +1,7 @@
 #pragma once
 
-#include <algorithm>
-#include <expected>
 #include <filesystem>
 #include <functional>
-#include <stdexcept>
 #include <string>
 #include <unordered_map>
 
@@ -15,26 +12,36 @@ struct SDL_TrayMenu;
 struct SDL_Surface;
 
 namespace hermes {
-	void global_init();
+	void global_initialize();
 	void global_shutdown();
-	
+
 	namespace this_process {
-		const std::filesystem::path& path();
-		inline std::filesystem::path dir() {
-			return path().parent_path();
-		}
-		inline std::string name() {
-			return path().filename().string();
-		}
+		// Returns the absolute path of the current process.
+		[[nodiscard]] std::filesystem::path path();
+
+		// Returns the parent directory of the current process.
+		[[nodiscard]] inline std::filesystem::path directory() { return path().parent_path(); }
+
+		// Returns the file name of the current process.
+		[[nodiscard]] inline std::filesystem::path filename() { return path().filename(); }
 	} // namespace this_process
 
 	namespace display {
-		bool can_sleep();
-		void enable_sleep();
-		void disable_sleep();
+		// Returns `true` if the screensaver is enabled (the display is allowed to sleep) and `false` otherwise.
+		// SDL's video subsystem must be initialized before calling this function.
+		[[nodiscard]] bool is_screensaver_enabled();
+
+		// Enables the display's screensaver (allowing it to sleep after a period of inactivity). It is enabled by
+		// default.
+		// SDL's video subsystem must be initialized before calling this function.
+		void enable_screensaver();
+
+		// Disables the display's screensaver. It is enabled by default.
+		// SDL's video subsystem must be initialized before calling this function.
+		void disable_screensaver();
 	} // namespace display
 
-	namespace meta {
+	namespace metadata {
 		const constexpr std::string APPLICATION {"application"};
 
 		void set_name(const std::string& value);
@@ -44,117 +51,78 @@ namespace hermes {
 		void set_url(const std::string& value);
 		void set_type(const std::string& value);
 
-		std::string get_url();
+		[[nodiscard]] std::string get_url();
+	}; // namespace metadata
 
-		struct AppMetadata {
-			const std::string name;
-			const std::string version;
-			const std::string creator;
-			const std::string copyright;
-			const std::string url;
-		};
-
-		inline void set_all(const AppMetadata& value) {
-			if (!value.name.empty()) {
-				set_name(value.name);
-			}
-
-			if (!value.version.empty()) {
-				set_version(value.version);
-			}
-
-			if (!value.creator.empty()) {
-				set_creator(value.creator);
-			}
-
-			if (!value.copyright.empty()) {
-				set_copyright(value.copyright);
-			}
-
-			if (!value.url.empty()) {
-				set_url(value.url);
-			}
-		}
-	}; // namespace meta
-
+	// A namespace-scoped timer that executes on the current thread, removing the necessity of creating an independent
+	// object for every timing task.
 	namespace thread_local_timer {
-		using clock_t = std::chrono::high_resolution_clock;
+		using clock_t	   = std::chrono::high_resolution_clock;
 		using time_point_t = std::chrono::time_point<clock_t>;
 
-		void start();
-		double stop();
-		double elapsed();
+		// Starts/resets the current thread's timer from 0.
+		void				 start() noexcept;
+		// Stops the current thread's timer. Returns the number of seconds elapsed (to nanosecond precision).
+		double				 stop() noexcept;
+		// Returns the number of seconds elapsed between the last call to `start()` and the last call to `stop()` (to
+		// nanosecond precision).
+		[[nodiscard]] double elapsed_seconds() noexcept;
 	} // namespace thread_local_timer
 
 	class Image {
 	public:
-		Image() = delete;
 		static Image from_file(const std::filesystem::path&);
 
-		Image(const Image&) = delete;
-		Image(Image&&) = default;
-		Image& operator=(const Image&) = default;
-		Image& operator=(Image&&) = default;
 		~Image();
+		Image()						   = delete;
+		Image(const Image&)			   = delete;
+		Image& operator=(const Image&) = delete;
+		Image(Image&&)				   = default;
+		Image& operator=(Image&&)	   = default;
 	private:
 		friend class TrayObject;
 
 		SDL_Surface* m_handle;
 
-		explicit Image(SDL_Surface* handle)
-			: m_handle {handle} {}
-	};
-
-	class ImageLoader {
-	public:
-		using Id = unsigned;
-
-		~ImageLoader();
-
-		void load(Id id, const std::filesystem::path& path);
-		Image& get(Id id);
-
-		void unload_all() { m_images_map.clear(); }
-
-		std::size_t count() { return m_images_map.size(); }
-	private:
-		std::unordered_map<Id, std::unique_ptr<Image>> m_images_map;
+		explicit Image(SDL_Surface* handle) : m_handle {handle} {}
 	};
 
 	class TrayEntry {
 	public:
-		// Note: Using `std::function` as callback type results in `std::bad_function_call` or segfault when
+		// Warning: Using `std::function` as callback type results in `std::bad_function_call` or segfault when
 		// optimizations are enabled.
 		using Callback = std::function<void(TrayEntry&)>;
-		// using Callback = void(*)(TrayEntry&);
 
-		TrayEntry(const TrayEntry&) = delete;
-		TrayEntry(TrayEntry&&) = default;
+		TrayEntry(const TrayEntry&)			   = delete;
+		TrayEntry& operator=(const TrayEntry&) = delete;
+		TrayEntry(TrayEntry&&)				   = default;
+		TrayEntry& operator=(TrayEntry&&)	   = default;
 
-		TrayEntry& set_callback(Callback callback);
+		TrayEntry set_callback(Callback callback) &&;
 
-		// checkbox
-		bool is_checked();
-		void set_checked(bool checked);
+		[[nodiscard]] bool is_checked();
+		void			   set_checked(bool checked);
+
 		void toggle_checked() { is_checked() ? set_checked(false) : set_checked(true); }
 	private:
 		friend class TrayMenu;
 
 		SDL_TrayEntry* m_handle;
-		Callback m_callback;
+		Callback	   m_callback;
 
-		explicit TrayEntry(SDL_TrayEntry* handle)
-			: m_handle {handle} {}
+		explicit TrayEntry(SDL_TrayEntry* handle) : m_handle {handle} {}
 
-		static void _invoke_entry_callback(void* ptr_entry, SDL_TrayEntry*);
+		static void invoke_entry_callback(void* ptr_entry, SDL_TrayEntry*);
 	};
 
 	class TrayObject;
 
 	class TrayMenu {
 	public:
-		TrayMenu(const TrayMenu&) = delete;
-		TrayMenu(TrayMenu&&) = default;
+		TrayMenu(const TrayMenu&)			 = delete;
+		TrayMenu& operator=(const TrayMenu&) = delete;
+		TrayMenu(TrayMenu&&)				 = default;
+		TrayMenu& operator=(TrayMenu&&)		 = default;
 
 		TrayEntry add_label(const std::string& label);
 		TrayEntry add_checkbox(const std::string& label, bool checked = false);
@@ -164,8 +132,7 @@ namespace hermes {
 
 		SDL_TrayMenu* m_handle;
 
-		TrayMenu(SDL_TrayMenu* handle)
-			: m_handle {handle} {}
+		TrayMenu(SDL_TrayMenu* handle) : m_handle {handle} {}
 
 		TrayEntry _insert_entry(int pos, const char* = nullptr, int flags = 0);
 	};
@@ -173,7 +140,12 @@ namespace hermes {
 	class TrayObject {
 	public:
 		explicit TrayObject(Image& icon, const std::string& tooltip = {});
+
 		~TrayObject();
+		TrayObject(const TrayObject&)			 = delete;
+		TrayObject& operator=(const TrayObject&) = delete;
+		TrayObject(TrayObject&&)				 = default;
+		TrayObject& operator=(TrayObject&&)		 = default;
 
 		TrayMenu new_menu();
 	private:

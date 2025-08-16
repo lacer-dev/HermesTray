@@ -1,33 +1,30 @@
 #include "../../pch.h"
 
-#include <array>
 #include <errhandlingapi.h>
-#include <expected>
-#include <filesystem>
 #include <libloaderapi.h>
-#include <memory>
-#include <system_error>
 #include <windows.h>
 
-#include "../../error.h"
+#include <array>
+#include <filesystem>
+#include <system_error>
+
 #include "../../sys.h"
 
-namespace hermes {
-	namespace this_process {
-		namespace {
-			std::filesystem::path _path_to_this_processess() {
-				std::array<char, MAX_PATH> buffer;
-				if (!GetModuleFileNameA(nullptr, buffer.data(), MAX_PATH)) {
-					throw std::system_error(
-						GetLastError(), std::generic_category(), "failed to obtain path to executable");
-				}
-				return buffer.data();
-			}
-		} // namespace
+namespace hermes::this_process {
+	[[nodiscard]] std::filesystem::path get_path_to_this_process() {
+		std::array<char, MAX_PATH> buffer;
 
-		const std::filesystem::path& path() {
-			static std::filesystem::path process_path = _path_to_this_processess();
-			return process_path;
+		// output a null-terminated string
+		if (!GetModuleFileNameA(nullptr, buffer.data(), MAX_PATH)) {
+			static std::string error_message = "Failed to obtain path to executable";
+			throw std::system_error(GetLastError(), std::generic_category(), error_message);
 		}
-	} // namespace this_process
-} // namespace hermes
+
+		return buffer.data();
+	}
+
+	std::filesystem::path path() {
+		static std::filesystem::path process_path = get_path_to_this_process();
+		return process_path;
+	}
+} // namespace hermes::this_process

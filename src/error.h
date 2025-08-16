@@ -1,16 +1,13 @@
 #pragma once
-#include <cassert>
 #include <exception>
 #include <format>
 #include <print>
 #include <source_location>
 #include <stdexcept>
 #include <string>
-#include <utility>
+#include <string_view>
 
 #include "sys.h"
-
-// Logging
 
 template<class... Args>
 inline void eprint(std::format_string<Args...> fmt, Args&&... args) {
@@ -22,55 +19,31 @@ inline void eprintln(std::format_string<Args...> fmt, Args&&... args) {
 	eprint("{}\n", std::format(fmt, std::forward<Args>(args)...));
 }
 
-template<class... Args>
-inline void eprintln() {
-	eprint("\n");
-}
+inline void eprintln() { eprintln(""); }
 
 namespace hermes {
-	enum class logl {
-		error,
-		warning,
-	};
-
-	inline const std::string_view to_string(logl level) {
-		switch (level) {
-		case logl::error:
-			return "\033[38;5;1merror\033[m";
-		case logl::warning:
-			return "\033[38;5;227mwarning\033[m";
-		default:
-			throw std::length_error("invalid log level");
-		}
-	}
-
-	// an alias to eprintln
 	template<class... Args>
-	inline void log(std::format_string<Args...> fmt, Args&&... args) {
-		eprintln("{}", std::format(fmt, std::forward<Args>(args)...));
+	inline void error(std::format_string<Args...> fmt, Args&&... args) {
+		eprintln("\033[38;5;1merror\033[m: {}", std::format(fmt, std::forward<Args>(args)...));
 	}
-
+	
 	template<class... Args>
-	inline void log(logl level, std::format_string<Args...> fmt, Args&&... args) {
-		log("{}: {}", to_string(level), std::format(fmt, std::forward<Args>(args)...));
-	}
-
-	template<class... Args>
-	inline void logerror(std::format_string<Args...> fmt, Args&&... args) {
-		log(logl::error, fmt, std::forward<Args>(args)...);
-	}
-
-	template<class... Args>
-	[[noreturn]]
-	inline void fatal_error(std::format_string<Args...> fmt, Args&&... args) {
+	[[noreturn]] inline void fatal(std::format_string<Args...> fmt, Args&&... args) {
 		eprintln("\033[38;5;160mfatal error\033[m: {}", std::format(fmt, std::forward<Args>(args)...));
 		std::terminate();
 	}
 
 	inline void
-		_force_assert(std::string_view _message, std::source_location _location = std::source_location::current()) {
+		_force_assert(std::string_view _message, std::source_location _location = std::source_location::current());
+
+	inline bool _validate_condition(
+		bool								condition,
+		[[maybe_unused]] const std::string& success_message = " done\n",
+		[[maybe_unused]] const std::string& fail_message	= " failed\n") noexcept;
+
+	void _force_assert(std::string_view _message, std::source_location _location) {
 		eprintln(
-			"\033[38;5;9mfailed assertion\033[m at {}:{}:{} in function \"{}\": {}",
+			"\033[38;5;9mfailed assertion\033[m at {}:{}:{} in function '{}': {}",
 			_location.file_name(),
 			_location.line(),
 			_location.column(),
@@ -79,18 +52,15 @@ namespace hermes {
 		std::terminate();
 	}
 
-	inline bool _validate_condition(
-		bool condition,
-		[[maybe_unused]] std::string success_message = " done\n",
-		[[maybe_unused]] std::string fail_message = " failed\n") {
+	bool _validate_condition(bool condition, const std::string& true_msg, const std::string& false_msg) noexcept {
 #ifndef NDEBUG
 		if (condition) {
-			if (!success_message.empty()) {
-				eprint("{}", success_message);
+			if (!true_msg.empty()) {
+				eprint("{}", true_msg);
 			}
 		} else {
-			if (!fail_message.empty()) {
-				eprint("{}", fail_message);
+			if (!false_msg.empty()) {
+				eprint("{}", false_msg);
 			}
 		}
 #endif
@@ -98,15 +68,25 @@ namespace hermes {
 	}
 }; // namespace hermes
 
-// Debug macros
+// Debug Macros
+////////////////////////////////////////////////////////////
+// `dbg_validate(bool condition, const std::string& true_msg, const std::string& false_msg)`
+// If `condition` is true, prints `true_msg`, otherwise prints `false_msg`
+//
+// `template<class... Args>
+// void dbg(std::format_string<Args...> fmt, Args&&... args)`
+//
+//
+// `bool dbg_assert(bool condition, const std::string& success_message = " done\n",
+//     const std::string& fail_message	= " failed\n") noexcept`
+////////////////////////////////////////////////////////////
+
+#define dbg_validate(...) ::hermes::_validate_condition(__VA_ARGS__)
+
 #ifndef NDEBUG
-	#define dbgdo(...)	 	do { __VA_ARGS__; } while (0)
-	#define dbg(...) do { eprint(__VA_ARGS__); } while (0)
-	#define dbgassert(...)	do { if (!(__VA_ARGS__)) ::hermes::_force_assert(#__VA_ARGS__); } while (0)
-	#define dbgvalidate(...) ::hermes::_validate_condition(__VA_ARGS__)
+	#define dbg(...) 		do { eprint(__VA_ARGS__); } while (0)
+	#define dbg_assert(...)	do { if (!(__VA_ARGS__)) ::hermes::_force_assert(#__VA_ARGS__); } while (0)
 #else
-	#define dbgdo(...)		((void)0)
-	#define dbg(...) 	((void)0)
-	#define dbgassert(...)	((void)0)
-	#define dbgvalidate(...) ::hermes::_validate_condition(__VA_ARGS__)
+	#define dbg(...) 		((void)0)
+	#define dbg_assert(...)	((void)0)
 #endif

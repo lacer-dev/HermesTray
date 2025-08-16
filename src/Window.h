@@ -32,7 +32,7 @@ namespace hermes {
 		explicit Window(Properties&& properties);
 		~Window();
 	private:
-		Properties m_properties;
+		Properties	m_properties;
 		SDL_Window* m_handle;
 	};
 } // namespace hermes

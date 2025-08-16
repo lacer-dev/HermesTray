@@ -3,13 +3,9 @@
 #include "Window.h"
 
 namespace hermes {
-	Window::Properties::Properties()
-		: m_id {SDL_CreateProperties()} {
-	}
+	Window::Properties::Properties() : m_id {SDL_CreateProperties()} {}
 
-	Window::Properties::~Properties() {
-		SDL_DestroyProperties(get_id());
-	}
+	Window::Properties::~Properties() { SDL_DestroyProperties(get_id()); }
 
 	Window::Properties::Properties(const std::string& title, const int width, const int height)
 		: Window::Properties {} {
@@ -18,9 +14,7 @@ namespace hermes {
 		set_height(height);
 	}
 
-	Window::Properties::Properties(Window::Properties&& other) noexcept
-		: m_id {std::exchange(other.m_id, 0)} {
-	}
+	Window::Properties::Properties(Window::Properties&& other) noexcept : m_id {std::exchange(other.m_id, 0)} {}
 
 	Window::Properties& Window::Properties::operator=(Window::Properties&& other) noexcept {
 		this->m_id = std::exchange(other.m_id, 0);
@@ -50,10 +44,7 @@ namespace hermes {
 
 	Window::Window(Window::Properties&& properties)
 		: m_properties {std::move(properties)},
-		  m_handle {SDL_CreateWindowWithProperties(m_properties.get_id())} {
-	}
+		  m_handle {SDL_CreateWindowWithProperties(m_properties.get_id())} {}
 
-	Window::~Window() {
-		SDL_DestroyWindow(m_handle);
-	}
+	Window::~Window() { SDL_DestroyWindow(m_handle); }
 } // namespace hermes
