@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 function log {
-  echo "$(basename "$0"): $*"
+  echo -e "\e[38;5;5m$(basename "$0"):\e[m $*"
 }
 
 # replace-symlink <link>
